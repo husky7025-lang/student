@@ -3,22 +3,22 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>학생부 3대 역량 분석기 & 학기별 기재 가이드</title>
-<!-- PDF.js CDN -->
+<title>학생부 종합 심층 분석기 & 대입 요강 정합도 진단기</title>
+<!-- PDF.js 라이브러리 CDN -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
   :root {
-    --navy: #0f172a; --bg: #f8fafc; --card: #ffffff; --line: #e2e8f0; --text: #1e293b; --sub: #64748b;
+    --navy: #0f172a; --navy-sub: #1e293b; --bg: #f8fafc; --card: #ffffff; --line: #e2e8f0; --text: #1e293b; --sub: #64748b;
     --academic: #2563eb; --career: #0d9488; --community: #e11d48;
     --green: #16a34a; --red: #dc2626; --purple: #7c3aed; --amber: #d97706;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif; background: var(--bg); color: var(--text); padding: 32px 16px; line-height: 1.6; }
-  .wrap { max-width: 1040px; margin: 0 auto; }
+  .wrap { max-width: 1080px; margin: 0 auto; }
   
   header { text-align: center; margin-bottom: 24px; }
-  header h1 { font-size: 1.75rem; color: var(--navy); margin-bottom: 6px; }
-  header p { font-size: 0.92rem; color: var(--sub); }
+  header h1 { font-size: 1.8rem; color: var(--navy); margin-bottom: 6px; font-weight: 900; }
+  header p { font-size: 0.94rem; color: var(--sub); }
   .privacy-tag { display: inline-block; margin-top: 10px; font-size: 0.8rem; background: #dcfce7; color: var(--green); padding: 5px 14px; border-radius: 99px; font-weight: 700; }
   
   .panel { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 24px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.03); }
@@ -34,7 +34,7 @@
   .drop-box .badge-req { position: absolute; top: 10px; left: 12px; font-size: 0.72rem; font-weight: 800; padding: 2px 8px; border-radius: 4px; }
   .badge-req.req { background: #fee2e2; color: var(--red); }
   .badge-req.opt { background: #f3e8ff; color: var(--purple); }
-  .drop-box .icon { font-size: 2rem; margin-bottom: 4px; }
+  .drop-box .icon { font-size: 2.2rem; margin-bottom: 4px; }
   .drop-box p { font-size: 0.92rem; font-weight: 800; color: var(--navy); margin-bottom: 2px; }
   .drop-box span { font-size: 0.78rem; color: var(--sub); }
   .file-status { margin-top: 8px; font-size: 0.8rem; font-weight: 700; color: var(--green); display: none; }
@@ -70,6 +70,12 @@
   .stat-card h3 { font-size: 0.95rem; margin-bottom: 6px; color: var(--navy); }
   .stat-card .rate { font-size: 1.6rem; font-weight: 900; }
   .stat-card .detail { font-size: 0.8rem; color: var(--sub); margin-top: 4px; }
+
+  /* 생기부 세부 영역 진단 칩 */
+  .area-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-top: 12px; }
+  .area-chip { background: #f8fafc; border: 1px solid var(--line); border-radius: 8px; padding: 10px; text-align: center; }
+  .area-chip h5 { font-size: 0.8rem; color: var(--sub); margin-bottom: 2px; }
+  .area-chip span { font-size: 0.95rem; font-weight: 800; color: var(--navy); }
 
   /* 학년별 성장 궤적 */
   .timeline-grid { display: grid; gap: 14px; margin-top: 14px; }
@@ -132,8 +138,8 @@
 
 <div class="wrap">
   <header class="noprint">
-    <h1>📋 생활기록부 심층 분석 & 학기별 기재 가이드</h1>
-    <p><b>전국 대학 표준 역량 진단</b>과 함께 <b>향후 학기 생기부를 어떻게 채워야 할지 맞춤 로드맵</b>을 제시합니다.</p>
+    <h1>📋 생활기록부 종합 심층 분석기</h1>
+    <p><b>영역별 구조 파싱 & 활동 수준 가중 배점</b>을 바탕으로 역량을 진단하고 <b>향후 보완 전략</b>을 제시합니다.</p>
     <div class="privacy-tag">🔒 서버 전송 없는 100% 로컬 브라우저 분석 (개인정보 보호)</div>
   </header>
 
@@ -184,7 +190,7 @@
 
     <div class="btnbar">
       <button class="btn primary" onclick="runAnalysis()">심층 역량 & 기재 가이드 분석 실행</button>
-      <button class="btn ghost" onclick="loadSampleData()">샘플 데이터 불러오기 (2개 학년)</button>
+      <button class="btn ghost" onclick="loadSampleData()">샘플 데이터 불러오기</button>
       <button class="btn ghost" onclick="resetAll()">🔄 초기화</button>
     </div>
   </div>
@@ -219,17 +225,24 @@
       </div>
     </div>
 
-    <!-- 2. 신규 기능: 향후 생기부 작성/보완 전략 가이드 -->
+    <!-- 2. 생기부 영역별 파싱 현황 요약 -->
+    <div class="panel">
+      <h2 style="font-size:1.15rem; color:var(--navy); margin-bottom:4px;">📑 생활기록부 구성 영역 감지 현황</h2>
+      <p style="font-size:0.85rem; color:var(--sub); margin-bottom:10px;">정규식 기반으로 자동 분류된 학생부 주요 항목별 기재 현황입니다.</p>
+      <div class="area-grid" id="areaGrid"></div>
+    </div>
+
+    <!-- 3. 향후 생기부 작성/보완 전략 가이드 -->
     <div class="panel">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
         <h2 style="font-size:1.2rem; color:var(--navy);">📝 향후 학교생활기록부 작성 및 보완 가이드</h2>
         <button class="btn ghost noprint" style="padding:6px 12px; font-size:0.84rem;" onclick="window.print()">🖨 가이드 인쇄</button>
       </div>
-      <p style="font-size:0.85rem; color:var(--sub); margin-bottom:16px;">현재 기재된 학년의 한계점을 극복하고, 다음 학기 세특·창체에서 입학사정관의 눈길을 끌기 위한 실전 작성 지침입니다.</p>
+      <p style="font-size:0.85rem; color:var(--sub); margin-bottom:16px;">현재 기재된 학년의 부족한 점을 보완하기 위한 실전 작성 지침을 제시합니다.</p>
       <div id="actionPlanContainer"></div>
     </div>
 
-    <!-- 3. 대입 표준 3대 역량 점유율 분석 -->
+    <!-- 4. 대입 표준 3대 역량 점유율 분석 -->
     <div class="panel">
       <h2 style="font-size:1.15rem; color:var(--navy); margin-bottom:12px;">📊 대입 표준 3대 역량 질적 점유율 (가중치 & 로그 감쇠 적용)</h2>
       <div class="ratio-container">
@@ -262,14 +275,14 @@
       </div>
     </div>
 
-    <!-- 4. 학년별 성장 궤적 (존재하는 학년만 동적 출력) -->
+    <!-- 5. 학년별 성장 궤적 (존재하는 학년만 동적 렌더링) -->
     <div class="panel">
       <h2 style="font-size:1.15rem; color:var(--navy); margin-bottom:4px;">📈 학년별 탐구 심화도 및 발전 궤적</h2>
       <p style="font-size:0.85rem; color:var(--sub); margin-bottom:12px;">입력된 실제 학년 데이터만을 기반으로 한 심화지수 추이</p>
       <div class="timeline-grid" id="timelineGrid"></div>
     </div>
 
-    <!-- 5. 강점 및 약점 동적 진단 -->
+    <!-- 6. 강점 및 약점 동적 진단 -->
     <div class="panel">
       <h2 style="font-size:1.15rem; color:var(--navy); margin-bottom:4px;">🔍 종합 진단 리포트 (강점 및 보완점)</h2>
       <p style="font-size:0.85rem; color:var(--sub); margin-bottom:14px;">대학 학종 평가 관점 및 실제 세특 문맥 기반 심층 분석</p>
@@ -295,7 +308,7 @@ if (window.pdfjsLib) {
 }
 
 // -------------------------------------------------------------
-// 1. 드래그 앤 드롭 및 파일 처리
+// 1. 파일 드롭존 핸들러
 // -------------------------------------------------------------
 function setupDropBox(boxId, fileInputId, handleFn) {
   const box = document.getElementById(boxId);
@@ -432,7 +445,7 @@ function runAnalysis() {
   const cPct = totalWeighted ? Math.round((weightedScores.career / totalWeighted) * 100) : 33;
   const mPct = totalWeighted ? 100 - (aPct + cPct) : 34;
 
-  // 바 & 지표 갱신
+  // 지표 갱신
   document.getElementById("barAcademic").style.width = aPct + "%";
   document.getElementById("barAcademic").innerText = `학업 ${aPct}%`;
   document.getElementById("barCareer").style.width = cPct + "%";
@@ -455,11 +468,14 @@ function runAnalysis() {
   renderBadges("badgesCareer", matchedWords.career, "career");
   renderBadges("badgesCommunity", matchedWords.community, "community");
 
-  // 2. 학년별 정밀 파싱 및 타임라인 (3학년 자동생성 오류 해결)
+  // 2. 생기부 영역 감지 렌더링
+  renderDetectedAreas(studentTxt);
+
+  // 3. 학년별 정밀 파싱 및 타임라인
   const gradeBlocks = parseGradeBlocks(studentTxt);
   renderTimeline(gradeBlocks);
 
-  // 3. 선택 사항: B대학 요강 1:1 동적 매칭
+  // 4. 선택 사항: B대학 요강 1:1 동적 매칭
   if (guideTxt) {
     document.getElementById("customMatchArea").style.display = "block";
     renderDynamicGuideMatching(studentTxt, guideTxt);
@@ -467,43 +483,78 @@ function runAnalysis() {
     document.getElementById("customMatchArea").style.display = "none";
   }
 
-  // 4. 강약점 심층 리포트
+  // 5. 강약점 심층 리포트
   renderStrengthsAndWeaknesses(studentTxt, aPct, cPct, mPct, weightedScores);
 
-  // 5. [신규 기능] 향후 생기부 작성 및 보완 가이드 생성
+  // 6. 향후 생기부 작성 및 보완 가이드 생성
   renderActionPlanGuide(studentTxt, aPct, cPct, mPct, gradeBlocks);
 
   document.getElementById("resultSection").style.display = "block";
 }
 
 // -------------------------------------------------------------
-// 4. 학년 분할 및 타임라인 함수 (오류 완벽 교정)
+// 4. 영역 감지 렌더링 함수
+// -------------------------------------------------------------
+function renderDetectedAreas(text) {
+  const grid = document.getElementById("areaGrid");
+  grid.innerHTML = "";
+
+  const areas = [
+    { name: "교과학습발달상황(세특)", regex: /세부능력|특기사항|과목별/ },
+    { name: "자율활동", regex: /자율활동/ },
+    { name: "동아리활동", regex: /동아리활동/ },
+    { name: "진로활동", regex: /진로활동/ },
+    { name: "행동특성 및 종합의견", regex: /행동특성|종합의견/ },
+    { name: "출결상황", regex: /출결상황|결석|지각/ }
+  ];
+
+  areas.forEach(a => {
+    const isFound = a.regex.test(text);
+    grid.innerHTML += `
+      <div class="area-chip">
+        <h5>${a.name}</h5>
+        <span style="color:${isFound ? 'var(--green)' : 'var(--sub)'}">${isFound ? '감지됨 ✔' : '미감지'}</span>
+      </div>
+    `;
+  });
+}
+
+// -------------------------------------------------------------
+// 5. 학년 분할 및 타임라인 함수 (나이스 실제 표기 완전 대응)
 // -------------------------------------------------------------
 function parseGradeBlocks(fullText) {
   const blocks = {};
-  
-  const g1Match = fullText.search(/(?:\[\vert{}\b\vert{}<)1학년(?:\]|\b|>)/);
-  const g2Match = fullText.search(/(?:\[\vert{}\b\vert{}<)2학년(?:\]|\b|>)/);
-  const g3Match = fullText.search(/(?:\[\vert{}\b\vert{}<)3학년(?:\]|\b|>)/);
 
-  if (g1Match !== -1) {
-    const end = (g2Match !== -1) ? g2Match : (g3Match !== -1 ? g3Match : fullText.length);
-    blocks["1학년"] = fullText.substring(g1Match, end);
-  }
+  // 나이스 실제 서식(공백, 괄호, 특수기호) 정밀 정규식
+  const getGradeIndex = (gNum) => {
+    const regex = new RegExp(`(?:\\[|<|\\(|【)?\\s*(?:제\\s*)?${gNum}\\s*학\\s*년\\s*(?:\\]|>|\\)|】)?`, 'g');
+    const match = regex.exec(fullText);
+    return match ? match.index : -1;
+  };
 
-  if (g2Match !== -1) {
-    const end = (g3Match !== -1) ? g3Match : fullText.length;
-    blocks["2학년"] = fullText.substring(g2Match, end);
-  }
+  const g1Idx = getGradeIndex(1);
+  const g2Idx = getGradeIndex(2);
+  const g3Idx = getGradeIndex(3);
 
-  // 텍스트에 '3학년' 표기가 실제로 존재할 때만 추출
-  if (g3Match !== -1) {
-    blocks["3학년"] = fullText.substring(g3Match);
-  }
-
-  // 학년 표기가 아예 없는 단일 파일일 경우
-  if (Object.keys(blocks).length === 0) {
-    blocks["기재 학년"] = fullText;
+  // 학년 키워드가 실제로 존재하는 경우에만 해당 학년 블록 생성
+  if (g1Idx !== -1 || g2Idx !== -1 || g3Idx !== -1) {
+    if (g1Idx !== -1) {
+      const end = (g2Idx !== -1 && g2Idx > g1Idx) ? g2Idx : ((g3Idx !== -1 && g3Idx > g1Idx) ? g3Idx : fullText.length);
+      blocks["1학년"] = fullText.substring(g1Idx, end);
+    }
+    if (g2Idx !== -1) {
+      const end = (g3Idx !== -1 && g3Idx > g2Idx) ? g3Idx : fullText.length;
+      blocks["2학년"] = fullText.substring(g2Idx, end);
+    }
+    if (g3Idx !== -1) {
+      blocks["3학년"] = fullText.substring(g3Idx);
+    }
+  } 
+  // 학년 표기가 아예 없는 단일 원문인 경우 (2개 학년 분량 자동 2분할)
+  else {
+    const half = Math.floor(fullText.length / 2);
+    blocks["1학년 (추정)"] = fullText.substring(0, half);
+    blocks["2학년 (추정)"] = fullText.substring(half);
   }
 
   return blocks;
@@ -530,7 +581,7 @@ function renderTimeline(gradeBlocks) {
       }
     });
 
-    const barPercent = Math.min(100, Math.max(15, depthScore * 10));
+    const barPercent = Math.min(100, Math.max(10, depthScore * 10));
     const tagDisplay = foundKeywords.length > 0 
       ? foundKeywords.slice(0, 4).map(k => `• ${k}`).join("<br>") 
       : "기초 교과 활동 및 참여 위주 서술";
@@ -546,7 +597,7 @@ function renderTimeline(gradeBlocks) {
 }
 
 // -------------------------------------------------------------
-// 5. [신규 기능] 향후 생기부 작성/보완 전략 가이드 생성 로직
+// 6. 향후 생기부 작성/보완 전략 가이드 생성 로직
 // -------------------------------------------------------------
 function renderActionPlanGuide(text, aPct, cPct, mPct, gradeBlocks) {
   const container = document.getElementById("actionPlanContainer");
@@ -621,7 +672,7 @@ function renderActionPlanGuide(text, aPct, cPct, mPct, gradeBlocks) {
 }
 
 // -------------------------------------------------------------
-// 6. 대학 요강 동적 1:1 매칭 함수
+// 7. 대학 요강 동적 1:1 매칭 함수
 // -------------------------------------------------------------
 function renderDynamicGuideMatching(studentTxt, guideTxt) {
   const detectedGuideSubjects = COMMON_CORE_SUBJECTS.filter(subj => guideTxt.includes(subj));
@@ -672,7 +723,7 @@ function renderDynamicGuideMatching(studentTxt, guideTxt) {
 }
 
 // -------------------------------------------------------------
-// 7. 강약점 심층 리포트
+// 8. 강약점 심층 리포트
 // -------------------------------------------------------------
 function renderStrengthsAndWeaknesses(text, aPct, cPct, mPct, weightedScores) {
   const strengths = [];
@@ -736,10 +787,9 @@ function renderStrengthsAndWeaknesses(text, aPct, cPct, mPct, weightedScores) {
 }
 
 // -------------------------------------------------------------
-// 8. 샘플 데이터 및 리셋
+// 9. 샘플 데이터 및 리셋
 // -------------------------------------------------------------
 function loadSampleData() {
-  // 1, 2학년 텍스트만 들어있는 샘플 (3학년 카드가 생성되지 않는지 검증 가능)
   document.getElementById("studentText").value = 
 `[1학년 - 통합과학]
 '신소재의 분자 구조와 전기적 특성'을 주제로 발표함. 탄소나노튜브와 그래핀의 2차원 분자 구조를 이해하고 전도성 원리를 학습함. 관련 과학 다큐멘터리를 시청하고 보고서를 작성함. 모둠 활동 시 조원들과 자료를 나누며 성실하게 참여함.
