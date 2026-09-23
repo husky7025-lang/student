@@ -1088,13 +1088,18 @@ function drawRadarChart(scores) {
 const WEIGHTED_DICT = {
   academic: [
     { word: "수식 증명", weight: 4 }, { word: "원리 유도", weight: 4 }, { word: "비판적 고찰", weight: 4 }, { word: "오차 분석", weight: 4 }, { word: "모델링", weight: 4 },
+    { word: "사료 분석", weight: 4 }, { word: "텍스트 비평", weight: 4 },
     { word: "심화 탐구", weight: 3 }, { word: "가설 설정", weight: 3 }, { word: "실험 설계", weight: 3 }, { word: "변인 통제", weight: 3 }, { word: "학술", weight: 3 },
+    { word: "문헌 조사", weight: 3 }, { word: "철학적 성찰", weight: 3 }, { word: "비판적 사고", weight: 3 },
     { word: "분석", weight: 2 }, { word: "도출", weight: 2 }, { word: "탐구", weight: 2 }, { word: "수학적", weight: 2 }, { word: "개념", weight: 1 }, { word: "학습함", weight: 1 }
   ],
   career: [
     { word: "알고리즘 구현", weight: 4 }, { word: "회로 설계", weight: 4 }, { word: "프로토타입", weight: 4 }, { word: "메커니즘 분석", weight: 4 }, { word: "시스템 구축", weight: 4 },
-    { word: "프로젝트 주도", weight: 3 }, { word: "데이터 분석", weight: 3 }, { word: "시뮬레이션", weight: 3 }, { word: "코딩", weight: 2 }, { word: "제작", weight: 2 },
-    { word: "설계", weight: 2 }, { word: "응용", weight: 2 }, { word: "기술", weight: 1 }, { word: "전공", weight: 1 }
+    { word: "정책 제안", weight: 4 }, { word: "비즈니스 모델", weight: 4 }, { word: "문학 비평", weight: 4 }, { word: "법률 검토", weight: 4 }, { word: "실증 분석", weight: 4 },
+    { word: "프로젝트 주도", weight: 3 }, { word: "데이터 분석", weight: 3 }, { word: "시뮬레이션", weight: 3 }, { word: "시장 분석", weight: 3 }, { word: "사회문제 해결", weight: 3 },
+    { word: "기사 작성", weight: 3 }, { word: "설문 조사", weight: 3 }, { word: "미디어 콘텐츠", weight: 3 },
+    { word: "코딩", weight: 2 }, { word: "제작", weight: 2 }, { word: "설계", weight: 2 }, { word: "응용", weight: 2 }, { word: "창업", weight: 2 }, { word: "마케팅", weight: 2 }, { word: "기획", weight: 2 },
+    { word: "과학기술", weight: 2 }, { word: "전문 역량", weight: 2 }, { word: "전공", weight: 1 }
   ],
   community: [
     { word: "갈등 중재", weight: 4 }, { word: "의견 조율", weight: 4 }, { word: "상호 협의", weight: 3 }, { word: "역할 분담", weight: 3 },
@@ -1368,10 +1373,10 @@ const MAJOR_RECOMMEND_DOMAINS = [
     category: "공학계열",
     targetHint: "컴퓨터",
     badge: "SW / 인공지능 / 빅데이터",
-    coreSubjects: ["미적분", "인공지능 수학", "정보"],
+    coreSubjects: ["미적분", "인공지능 수학", "정보", "프로그래밍"],
     generalSubjects: ["수학Ⅰ", "수학Ⅱ", "확률과 통계"],
     specKeywords: ["알고리즘", "자율주행", "머신러닝", "딥러닝", "디버깅", "자료구조", "인공지능", "코딩"],
-    generalKeywords: ["데이터", "프로그래밍", "소프트웨어", "시뮬레이션", "최적화", "연산", "파이썬"],
+    generalKeywords: ["빅데이터", "데이터 분석", "프로그래밍", "소프트웨어", "시뮬레이션", "최적화", "연산", "파이썬"],
     desc: "수학적 논리 추론력을 바탕으로 알고리즘 설계와 시뮬레이션 구현, 데이터 최적화 분석 역량이 돋보입니다."
   },
   {
@@ -1401,10 +1406,10 @@ const MAJOR_RECOMMEND_DOMAINS = [
     category: "사회/상경계열",
     targetHint: "경영",
     badge: "비즈니스 / 금융·데이터",
-    coreSubjects: ["경제", "경제수학", "확률과 통계"],
-    generalSubjects: ["수학Ⅰ", "수학Ⅱ", "사회·문화"],
-    specKeywords: ["게임이론", "한계효용", "재무제표", "포트폴리오", "회귀분석", "거시경제", "미시경제"],
-    generalKeywords: ["경제", "경영", "시장", "소비자", "통계", "금융", "수요", "공급", "마케팅", "투자"],
+    coreSubjects: ["경제", "경제수학", "확률과 통계", "국제 경제"],
+    generalSubjects: ["사회·문화", "생활과 윤리", "통합사회", "수학Ⅰ"],
+    specKeywords: ["마케팅", "소비자", "기업가", "경영학", "투자", "금융", "거시경제", "미시경제", "수요와 공급", "인플레이션", "재무제표", "게임이론", "플랫폼 비즈니스", "한계효용", "비즈니스 모델", "환율", "무역", "회계", "시장 분석", "창업 아이템", "가격 결정"],
+    generalKeywords: ["경제", "경영", "시장", "소비", "기업", "창업", "수익", "가격", "자본", "소득", "유통", "브랜드", "전략"],
     desc: "시장 현상과 통계적 데이터 분석을 융합하여 합리적 의사결정을 모델링하는 상경계열 학문 적합성을 지닙니다."
   },
   {
@@ -1412,10 +1417,10 @@ const MAJOR_RECOMMEND_DOMAINS = [
     category: "사회/상경계열",
     targetHint: "사회",
     badge: "미디어 / 법·행정 / 정책",
-    coreSubjects: ["정치와 법", "사회문제 탐구", "사회·문화"],
-    generalSubjects: ["생활과 윤리", "세계지리", "한국지리"],
-    specKeywords: ["공공정책", "여론조사", "의제설정", "프레임이론", "사회보장", "입법", "시민참여"],
-    generalKeywords: ["사회", "미디어", "정책", "시민", "공공", "커뮤니케이션", "제도", "갈등", "인권"],
+    coreSubjects: ["정치와 법", "사회문제 탐구", "사회·문화", "현대 사회와 철학", "국제 관계와 국제기구"],
+    generalSubjects: ["통합사회", "생활과 윤리", "한국지리", "세계지리"],
+    specKeywords: ["공공정책", "사회문제", "불평등", "사회복지", "기본권", "헌법", "법률", "민주주의", "미디어", "언론", "저널리즘", "여론조사", "의제설정", "프레임이론", "사회보장", "입법", "시민참여", "사회적 약자", "다문화", "소수자", "인권 침해", "복지 정책", "보편적 복지", "선별적 복지"],
+    generalKeywords: ["사회", "정책", "시민", "공공", "커뮤니케이션", "제도", "갈등", "인권", "정부", "뉴스", "기사", "방송", "언론인", "기자", "복지"],
     desc: "사회적 이슈에 대한 다각적 비판의식과 공동체 문제해결을 위한 제도·정책적 대안 제시 역량이 두드러집니다."
   },
   {
@@ -1423,38 +1428,72 @@ const MAJOR_RECOMMEND_DOMAINS = [
     category: "인문계열",
     targetHint: "국어",
     badge: "인문학 / 텍스트·문화비평",
-    coreSubjects: ["윤리와 사상", "고전 읽기", "심화 국어", "철학"],
-    generalSubjects: ["언어와 매체", "현대문학 감상", "세계사", "동아시아사"],
-    specKeywords: ["인문학", "문학비평", "해석학", "담론분석", "작가론", "언어학", "실존주의", "사상사", "텍스트 비평", "탈구축", "미학"],
-    generalKeywords: ["철학", "사상", "고전", "문예", "서사", "인문", "윤리관", "역사의식", "시대정신", "비평"],
+    coreSubjects: ["윤리와 사상", "고전 읽기", "심화 국어", "철학", "문학", "고전과 윤리"],
+    generalSubjects: ["국어", "독서", "언어와 매체", "화법과 작문", "세계사", "동아시아사", "한국사"],
+    specKeywords: ["문학비평", "인문학", "작가론", "서사구조", "시대정신", "역사의식", "문학적 상징", "감상평", "비판적 성찰", "작품 분석", "현대시", "고전문학", "사상사", "철학적 성찰", "텍스트 비평", "독립운동", "역사 사료", "문화콘텐츠", "문화유산", "서평", "표현 기법", "담론", "실존주의", "해석학"],
+    generalKeywords: ["문학", "소설", "시", "작가", "철학", "사상", "역사", "고전", "인문", "윤리", "도덕", "가치관", "성찰", "창작", "비평", "작품", "서사", "언어", "맞춤법"],
     desc: "풍부한 독서 이력과 텍스트 비판적 분석력, 인간과 문화를 관통하는 인문학적 성찰 깊이가 남다릅니다."
   }
 ];
+
+// 과목명 정밀 매칭 함수 (동음이의어 '필기하고', '정보 검색' 등 오탐 방지)
+function matchSubjectInText(studentTxt, normTxt, subj) {
+  // 1. 과목명이 '기하'인 경우: 필기하고, 포기하지, 야기하는 등 동사 어간 오인식 방지
+  if (subj === "기하") {
+    if (/\[[^\]]*기하[^\]]*\]|기하와\s*벡터|기하학|기하\s*(?:과목|교과|세특)/.test(studentTxt)) return true;
+    const matches = studentTxt.match(/([가-힣]?)기하/g);
+    if (!matches) return false;
+    const invalidPrefixes = ['필', '포', '환', '폐', '야', '동', '얘', '하', '쓰', '읽', '듣', '들', '따', '먹', '받', '주'];
+    return matches.some(m => {
+      const prefix = m.length === 3 ? m[0] : '';
+      return !invalidPrefixes.includes(prefix);
+    });
+  }
+  // 2. 과목명이 '정보'인 경우: '정보를 검색', '정보 수집' 등 일반 명사 오인식 방지
+  if (subj === "정보") {
+    if (/\[[^\]]*정보[^\]]*\]|정보\s*(?:과목|교과|세특)|정보과학|정보통신/.test(studentTxt)) return true;
+    return /(?:과목|교과)\s*정보\b/.test(studentTxt);
+  }
+  // 3. 문학/독서/철학/경제 등 단일 단어 과목: 교과 헤더([문학 세특])나 교과 맥락 확인
+  if (subj === "문학" || subj === "독서" || subj === "철학" || subj === "경제") {
+    if (new RegExp('(\\[|\\b|과목\\s*|교과\\s*)' + subj + '(\\s*세특|\\s*과목|\\s*교과|\\s*시간|\\s*수업|\\s*단위|\\s*\\:|\\s*\\(|\\]|\\b)').test(studentTxt)) return true;
+    return new RegExp('(?:과목|교과|선택|수강한|배운|이수한)\\s*' + subj + '|' + subj + '(?:\\s*교과|\\s*과목|\\s*세특|\\s*시간|\\s*수업)').test(studentTxt);
+  }
+  // 4. 고유 과목명 (정치와 법, 사회·문화, 생활과 윤리, 윤리와 사상, 물리학Ⅰ, 미적분 등)
+  const normSubj = normalizeSubject(subj);
+  return studentTxt.includes(subj) || normTxt.includes(normSubj);
+}
 
 function recommendTopMajors(studentTxt, sections, aPct, cPct, mPct, lvlData) {
   const normTxt = normalizeSubject(studentTxt);
   const avgLevel = lvlData ? parseFloat(lvlData.avgLevel) : 2.0;
 
-  // 0단계: 학생의 대계열(STEM vs 인문사회) 궤적 자동 판별 (1학년 통합과학/과학탐구실험/수학 전면 반영)
-  const stemSubjPattern = /통합과학|과학탐구|물리학|물리|화학|생명과학|생물|지구과학|미적분|기하|수학|정보|인공지능|공학|프로그래밍/g;
-  const stemSubjMatches = (studentTxt.match(stemSubjPattern) || []).length;
-  
-  const stemKwPattern = /과학|실험|수식|원리|공학|분자|세포|반도체|에너지|알고리즘|코딩|물리|화학|생명|모빌리티|기계|수학적|기술|오차|가설|유도|시뮬레이션|전기|전자|센서|회로|단백질|효소|유전자/g;
-  const stemKwMatches = (studentTxt.match(stemKwPattern) || []).length;
-  const stemScore = stemSubjMatches * 2 + stemKwMatches;
+  // 0단계: 대계열(STEM vs 인문사회) 성향 판별 (고교 2~3학년 선택과목 및 활동 어휘 밀도 중심, 동음이의어 배제)
+  // 1학년 공통과목(통합과학/사회/한국사 등)은 양 계열 모두 이수하므로 판별 가중치에서 배제
+  const stemElectiveSubjs = ["물리학Ⅰ", "물리학Ⅱ", "화학Ⅰ", "화학Ⅱ", "생명과학Ⅰ", "생명과학Ⅱ", "지구과학Ⅰ", "지구과학Ⅱ", "미적분", "인공지능 수학", "프로그래밍"];
+  let stemElectiveMatches = stemElectiveSubjs.filter(s => matchSubjectInText(studentTxt, normTxt, s)).length;
+  if (matchSubjectInText(studentTxt, normTxt, "기하")) stemElectiveMatches += 1;
+  if (matchSubjectInText(studentTxt, normTxt, "정보")) stemElectiveMatches += 1;
 
-  const humSubjPattern = /정치와\s*법|사회문제|사회·문화|생활과\s*윤리|윤리와\s*사상|경제|세계사|동아시아사|한국지리|세계지리|철학|고전\s*읽기|심화\s*국어|문예/g;
-  const humSubjMatches = (studentTxt.match(humSubjPattern) || []).length;
-  const humKwPattern = /문학비평|작가론|철학사|인문학|해석학|실존주의|담론분석|공공정책|의제설정|사회보장|입법|미디어|여론조사|시민참여|법률|사상사|언어학/g;
-  const humKwMatches = (studentTxt.match(humKwPattern) || []).length;
-  const humScore = humSubjMatches * 2 + humKwMatches;
+  const humElectiveSubjs = ["정치와 법", "사회문제 탐구", "사회·문화", "생활과 윤리", "윤리와 사상", "경제", "경제수학", "세계사", "동아시아사", "한국지리", "세계지리", "고전 읽기", "심화 국어", "철학", "고전과 윤리"];
+  const humElectiveMatches = humElectiveSubjs.filter(s => matchSubjectInText(studentTxt, normTxt, s)).length;
 
-  const isStemOriented = (stemScore >= 6 && stemScore > humScore * 1.2);
-  const isHumOriented = (humScore >= 6 && humScore > stemScore * 1.2);
+  // 순수 활동 어휘 (동음이의어 '기술함', '원리', '실험', '수학' 철저 배제)
+  const stemKwPat = /물리학|화학반응|전자기|회로|코딩|알고리즘|반도체|모빌리티|신소재|배터리|이차전지|단백질|세포|유전자|효소|신경전달|분자\s*구조|기계공학|소프트웨어|하드웨어|시뮬레이션/g;
+  const humKwPat = /인권|사회문제|불평등|복지|민주주의|헌법|법률|공공정책|언론|미디어|저널리즘|기자|뉴스|소설|문학|작가|시인|사료|역사의식|철학|윤리적|마케팅|소비자|기업가|경영학|시장경제|금융|투자/g;
+
+  const stemKwCount = (studentTxt.match(stemKwPat) || []).length;
+  const humKwCount = (studentTxt.match(humKwPat) || []).length;
+
+  const stemScore = stemElectiveMatches * 4 + stemKwCount;
+  const humScore = humElectiveMatches * 4 + humKwCount;
+
+  const isStemOriented = (stemScore >= 5 && stemScore > humScore * 1.4);
+  const isHumOriented = (humScore >= 5 && humScore > stemScore * 1.4);
 
   let trackDesc = "계열 융합·자율 탐색 단계 (문·이과 미정)";
-  if (isStemOriented) trackDesc = "🔬 이공·자연과학계열 성향 감지 (세부 전공 미정)";
-  else if (isHumOriented) trackDesc = "📖 인문·사회계열 성향 감지 (세부 전공 미정)";
+  if (isStemOriented) trackDesc = "🔬 이공·자연과학계열 성향 감지";
+  else if (isHumOriented) trackDesc = "📖 인문·사회계열 성향 감지";
 
   // 1단계: 각 도메인별 원시 지표 수집
   let totalSpecMatchesAll = 0;
@@ -1462,8 +1501,8 @@ function recommendTopMajors(studentTxt, sections, aPct, cPct, mPct, lvlData) {
 
   MAJOR_RECOMMEND_DOMAINS.forEach(dom => {
     // A. 과목 이수 (최대 25점 - 전공 핵심 고급과목 위계 평가)
-    const coreMatches = (dom.coreSubjects || []).filter(s => studentTxt.includes(s) || normTxt.includes(normalizeSubject(s)));
-    const genMatches = (dom.generalSubjects || []).filter(s => studentTxt.includes(s) || normTxt.includes(normalizeSubject(s)));
+    const coreMatches = (dom.coreSubjects || []).filter(s => matchSubjectInText(studentTxt, normTxt, s));
+    const genMatches = (dom.generalSubjects || []).filter(s => matchSubjectInText(studentTxt, normTxt, s));
     const subjScore = Math.min(16, coreMatches.length * 8) + Math.min(9, genMatches.length * 3);
 
     // B. 전문 어휘 분석 (전문 어휘 vs 일반 어휘 가중 분리)
@@ -1506,17 +1545,17 @@ function recommendTopMajors(studentTxt, sections, aPct, cPct, mPct, lvlData) {
       if (studentTxt.includes("실험") || studentTxt.includes("회로") || studentTxt.includes("설계")) evidenceScore += 3;
       if (studentTxt.includes("모델링") || studentTxt.includes("시뮬레이션") || studentTxt.includes("알고리즘")) evidenceScore += 2;
     } else if (dom.category === "사회/상경계열") {
-      if (studentTxt.includes("통계") || studentTxt.includes("데이터")) evidenceScore += 3;
-      if (studentTxt.includes("갈등") && (studentTxt.includes("조율") || studentTxt.includes("중재"))) evidenceScore += 3;
-      if (studentTxt.includes("사회") || studentTxt.includes("정책")) evidenceScore += 2;
+      if (studentTxt.includes("통계") || studentTxt.includes("데이터") || studentTxt.includes("설문")) evidenceScore += 3;
+      if ((studentTxt.includes("갈등") && (studentTxt.includes("조율") || studentTxt.includes("중재"))) || studentTxt.includes("불평등")) evidenceScore += 3;
+      if (studentTxt.includes("사회") || studentTxt.includes("정책") || studentTxt.includes("시장")) evidenceScore += 2;
     } else if (dom.category === "의약학/보건계열") {
       if (studentTxt.includes("실험") || studentTxt.includes("가설")) evidenceScore += 3;
       if (studentTxt.includes("세포") || studentTxt.includes("생명")) evidenceScore += 3;
       if (studentTxt.includes("임상") || studentTxt.includes("기전")) evidenceScore += 2;
     } else { // 인문계열
-      if (studentTxt.includes("문학비평") || studentTxt.includes("작가론") || studentTxt.includes("사상사")) evidenceScore += 3;
-      if (studentTxt.includes("인문학") || studentTxt.includes("철학") || studentTxt.includes("고전")) evidenceScore += 3;
-      if (studentTxt.includes("담론") || studentTxt.includes("시대정신") || studentTxt.includes("해석학")) evidenceScore += 2;
+      if (studentTxt.includes("비평") || studentTxt.includes("서평") || studentTxt.includes("감상평") || studentTxt.includes("문학적")) evidenceScore += 3;
+      if (studentTxt.includes("역사") || studentTxt.includes("사료") || studentTxt.includes("철학") || studentTxt.includes("성찰") || studentTxt.includes("고전")) evidenceScore += 3;
+      if (studentTxt.includes("작품") || studentTxt.includes("시대정신") || studentTxt.includes("가치관") || studentTxt.includes("담론")) evidenceScore += 2;
     }
     const inquiryScore = lvlScore + Math.min(8, evidenceScore);
 
@@ -1553,8 +1592,16 @@ function recommendTopMajors(studentTxt, sections, aPct, cPct, mPct, lvlData) {
       total = Math.min(25, total);
     }
 
-    // 2. 이공계열(STEM) 학생인데 인문 전문 활동이 전무한 경우 강력 감점 (독서 단순 언급으로 인한 오분류 차단)
+    // 2. 대칭적 교차 필터링:
+    // A) 이공계열(STEM) 학생인데 인문 전공 전문 활동이 전무한 경우 강력 감점 (독서 단순 언급으로 인한 오분류 차단)
     if (isStemOriented && d.dom.category === "인문계열") {
+      if (d.mSpec.length < 2) {
+        total = Math.min(10, total - 35);
+      }
+    }
+
+    // B) 인문사회 지향 학생인데 공학/의약학 전공 전문 활동이 전무한 경우 강력 감점 (공통수학/데이터 등으로 인한 오분류 차단)
+    if (isHumOriented && (d.dom.category === "공학계열" || d.dom.category === "의약학/보건계열")) {
       if (d.mSpec.length < 2) {
         total = Math.min(10, total - 35);
       }
