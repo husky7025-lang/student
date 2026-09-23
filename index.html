@@ -4,17 +4,17 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>학생부 종합 심층 분석기 & 대입 요강 정합도 진단기</title>
-<!-- PDF.js 라이브러리 CDN -->
+<!-- PDF.js CDN -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
   :root {
-    --navy: #0f172a; --navy-sub: #1e293b; --bg: #f8fafc; --card: #ffffff; --line: #e2e8f0; --text: #1e293b; --sub: #64748b;
+    --navy: #0f172a; --bg: #f8fafc; --card: #ffffff; --line: #e2e8f0; --text: #1e293b; --sub: #64748b;
     --academic: #2563eb; --career: #0d9488; --community: #e11d48;
     --green: #16a34a; --red: #dc2626; --purple: #7c3aed; --amber: #d97706;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif; background: var(--bg); color: var(--text); padding: 32px 16px; line-height: 1.6; }
-  .wrap { max-width: 1080px; margin: 0 auto; }
+  .wrap { max-width: 1060px; margin: 0 auto; }
   
   header { text-align: center; margin-bottom: 24px; }
   header h1 { font-size: 1.8rem; color: var(--navy); margin-bottom: 6px; font-weight: 900; }
@@ -23,6 +23,12 @@
   
   .panel { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 24px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.03); }
   
+  /* 대학 프리셋 선택 영역 */
+  .target-select-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; background: #f1f5f9; padding: 16px; border-radius: 10px; }
+  .target-select-wrap label { font-size: 0.85rem; font-weight: 800; color: var(--navy); display: block; margin-bottom: 4px; }
+  select { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1.5px solid var(--line); font-size: 0.92rem; outline: none; background: #fff; font-family: inherit; }
+  select:focus { border-color: var(--academic); }
+
   /* 듀얼 드롭존 레이아웃 */
   .dual-drop-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 16px; margin-bottom: 14px; }
   .drop-box {
@@ -70,12 +76,6 @@
   .stat-card h3 { font-size: 0.95rem; margin-bottom: 6px; color: var(--navy); }
   .stat-card .rate { font-size: 1.6rem; font-weight: 900; }
   .stat-card .detail { font-size: 0.8rem; color: var(--sub); margin-top: 4px; }
-
-  /* 생기부 세부 영역 진단 칩 */
-  .area-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-top: 12px; }
-  .area-chip { background: #f8fafc; border: 1px solid var(--line); border-radius: 8px; padding: 10px; text-align: center; }
-  .area-chip h5 { font-size: 0.8rem; color: var(--sub); margin-bottom: 2px; }
-  .area-chip span { font-size: 0.95rem; font-weight: 800; color: var(--navy); }
 
   /* 학년별 성장 궤적 */
   .timeline-grid { display: grid; gap: 14px; margin-top: 14px; }
@@ -129,6 +129,7 @@
     .timeline-card, .custom-match-box, .guide-box { break-inside: avoid; }
   }
   @media(max-width: 768px) {
+    .target-select-wrap { grid-template-columns: 1fr; }
     .dual-drop-grid { grid-template-columns: 1fr; }
     .timeline-grid { grid-template-columns: 1fr; }
   }
@@ -139,14 +140,25 @@
 <div class="wrap">
   <header class="noprint">
     <h1>📋 생활기록부 종합 심층 분석기</h1>
-    <p><b>영역별 구조 파싱 & 활동 수준 가중 배점</b>을 바탕으로 역량을 진단하고 <b>향후 보완 전략</b>을 제시합니다.</p>
+    <p><b>전국 대학 표준 역량 진단</b>과 <b>대학별 1:1 맞춤 정합성 점검</b>을 동시에 제공합니다.</p>
     <div class="privacy-tag">🔒 서버 전송 없는 100% 로컬 브라우저 분석 (개인정보 보호)</div>
   </header>
 
   <div class="panel noprint">
-    <!-- 듀얼 드롭존: 생기부(필수) + 모집요강(선택) -->
+    <!-- 목표 대학 프리셋 선택 (univ_data.json 동적 연동) -->
+    <div class="target-select-wrap">
+      <div>
+        <label for="univSelect">🏛 목표 대학교 선택 (프리셋)</label>
+        <select id="univSelect" onchange="updateDeptSelect()"></select>
+      </div>
+      <div>
+        <label for="deptSelect">🎯 지원 희망 학과(모집단위) 선택</label>
+        <select id="deptSelect"></select>
+      </div>
+    </div>
+
+    <!-- 듀얼 드롭존 -->
     <div class="dual-drop-grid">
-      <!-- 1. 학생부 업로드 (필수) -->
       <div class="drop-box" id="studentDrop" onclick="document.getElementById('studentFile').click()">
         <span class="badge-req req">필수 입력</span>
         <div class="icon">📄</div>
@@ -156,12 +168,11 @@
       </div>
       <input type="file" id="studentFile" accept=".pdf" style="display:none" onchange="handleStudentPdf(this.files[0])">
 
-      <!-- 2. 대학 모집요강 업로드 (선택) -->
       <div class="drop-box optional" id="guideDrop" onclick="document.getElementById('guideFile').click()">
-        <span class="badge-req opt">선택 (1:1 매칭)</span>
+        <span class="badge-req opt">선택 (신규 대학 요강)</span>
         <div class="icon">🏛</div>
-        <p>B. 목표 대학 모집요강 / 가이드북</p>
-        <span>원하는 대학의 요강 PDF를 넣으면 맞춤 분석</span>
+        <p>B. 새 대학 모집요강 / 가이드북</p>
+        <span>목록에 없는 새 대학 요강 PDF를 올리면 즉시 매칭</span>
         <div class="file-status" id="guideStatus">✅ 요강 탑재 완료</div>
       </div>
       <input type="file" id="guideFile" accept=".pdf" style="display:none" onchange="handleGuidePdf(this.files[0])">
@@ -182,15 +193,15 @@
       </div>
       <div>
         <label style="font-size:0.82rem; font-weight:800; color:var(--sub); display:block; margin-bottom:4px;">
-          B. 목표 대학 요강/가이드북 문구 (직접 붙여넣기 가능)
+          B. 목표 대학 요강 문구 (직접 붙여넣기 가능)
         </label>
-        <textarea id="guideText" placeholder="(선택사항) 특정 대학 가이드북 문구를 넣으면 해당 대학 맞춤형 매칭률을 계산합니다..."></textarea>
+        <textarea id="guideText" placeholder="(선택사항) 새 대학 요강 문구를 넣으면 프리셋 대신 이 문구와 1:1 매칭합니다..."></textarea>
       </div>
     </div>
 
     <div class="btnbar">
       <button class="btn primary" onclick="runAnalysis()">심층 역량 & 기재 가이드 분석 실행</button>
-      <button class="btn ghost" onclick="loadSampleData()">샘플 데이터 불러오기</button>
+      <button class="btn ghost" onclick="loadSampleData()">샘플 데이터 불러오기 (2개 학년)</button>
       <button class="btn ghost" onclick="resetAll()">🔄 초기화</button>
     </div>
   </div>
@@ -198,51 +209,26 @@
   <!-- 결과 영역 -->
   <div id="resultSection" style="display:none;">
     
-    <!-- 1. B대학 요강 1:1 동적 매칭 리포트 (입력 시에만 활성화) -->
-    <div id="customMatchArea" style="display:none;">
-      <div class="custom-match-box">
-        <div class="match-header">
-          <div>
-            <div class="match-title">🎯 업로드된 대학 모집요강 1:1 동적 매칭 진단</div>
-            <div class="match-meta" id="matchMeta">제출된 대학 요강의 핵심 어휘 및 평가 기준을 직접 파싱한 결과입니다.</div>
-          </div>
-          <div class="match-score" id="matchScoreVal">정합도 지수: 0%</div>
-        </div>
-
-        <div class="match-item">
-          <b>① 대학 요강에서 추출된 핵심 평가 지표 일치 현황:</b><br>
-          <div id="matchedGuideKeywords" style="margin-top:4px;"></div>
-        </div>
-
-        <div class="match-item">
-          <b>② 대학 지정 권장 이수 과목 추정 검출:</b><br>
-          <div id="matchedSubjects"></div>
-        </div>
-
-        <div class="match-item" style="margin-top:12px; font-size:0.86rem; color:#6b21a8; background:#f3e8ff; padding:12px; border-radius:8px;">
-          💡 <b>업로드 요강 기반 맞춤 피드백:</b> <span id="guideFeedback"></span>
-        </div>
-      </div>
-    </div>
-
-    <!-- 2. 생기부 영역별 파싱 현황 요약 -->
+    <!-- 1. 목표 대학 맞춤 GAP 분석 카드 -->
     <div class="panel">
-      <h2 style="font-size:1.15rem; color:var(--navy); margin-bottom:4px;">📑 생활기록부 구성 영역 감지 현황</h2>
-      <p style="font-size:0.85rem; color:var(--sub); margin-bottom:10px;">정규식 기반으로 자동 분류된 학생부 주요 항목별 기재 현황입니다.</p>
-      <div class="area-grid" id="areaGrid"></div>
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h2 style="font-size:1.18rem; color:var(--navy);">🎯 지원 목표 대학 맞춤형 정합성 갭(GAP) 분석</h2>
+        <button class="btn ghost noprint" style="padding:6px 12px; font-size:0.84rem;" onclick="window.print()">🖨 결과 인쇄</button>
+      </div>
+      <div id="gapContainer"></div>
     </div>
 
-    <!-- 3. 향후 생기부 작성/보완 전략 가이드 -->
+    <!-- 2. 향후 생기부 작성/보완 전략 가이드 -->
     <div class="panel">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
         <h2 style="font-size:1.2rem; color:var(--navy);">📝 향후 학교생활기록부 작성 및 보완 가이드</h2>
         <button class="btn ghost noprint" style="padding:6px 12px; font-size:0.84rem;" onclick="window.print()">🖨 가이드 인쇄</button>
       </div>
-      <p style="font-size:0.85rem; color:var(--sub); margin-bottom:16px;">현재 기재된 학년의 부족한 점을 보완하기 위한 실전 작성 지침을 제시합니다.</p>
+      <p style="font-size:0.85rem; color:var(--sub); margin-bottom:16px;">현재 기재된 학년의 부족한 점을 분석하여, 다음 학기 세특·창체에서 입학사정관의 눈길을 끌기 위한 실전 작성 지침을 제시합니다.</p>
       <div id="actionPlanContainer"></div>
     </div>
 
-    <!-- 4. 대입 표준 3대 역량 점유율 분석 -->
+    <!-- 3. 대입 표준 3대 역량 점유율 분석 -->
     <div class="panel">
       <h2 style="font-size:1.15rem; color:var(--navy); margin-bottom:12px;">📊 대입 표준 3대 역량 질적 점유율 (가중치 & 로그 감쇠 적용)</h2>
       <div class="ratio-container">
@@ -275,14 +261,14 @@
       </div>
     </div>
 
-    <!-- 5. 학년별 성장 궤적 (존재하는 학년만 동적 렌더링) -->
+    <!-- 4. 학년별 성장 궤적 (존재하는 학년만 동적 렌더링) -->
     <div class="panel">
       <h2 style="font-size:1.15rem; color:var(--navy); margin-bottom:4px;">📈 학년별 탐구 심화도 및 발전 궤적</h2>
       <p style="font-size:0.85rem; color:var(--sub); margin-bottom:12px;">입력된 실제 학년 데이터만을 기반으로 한 심화지수 추이</p>
       <div class="timeline-grid" id="timelineGrid"></div>
     </div>
 
-    <!-- 6. 강점 및 약점 동적 진단 -->
+    <!-- 5. 강점 및 약점 동적 진단 -->
     <div class="panel">
       <h2 style="font-size:1.15rem; color:var(--navy); margin-bottom:4px;">🔍 종합 진단 리포트 (강점 및 보완점)</h2>
       <p style="font-size:0.85rem; color:var(--sub); margin-bottom:14px;">대학 학종 평가 관점 및 실제 세특 문맥 기반 심층 분석</p>
@@ -308,7 +294,66 @@ if (window.pdfjsLib) {
 }
 
 // -------------------------------------------------------------
-// 1. 파일 드롭존 핸들러
+// [데이터 분리 연동] univ_data.json 동적 로드
+// -------------------------------------------------------------
+let UNIV_DATABASE = {};
+
+async function loadUnivDatabase() {
+  try {
+    const res = await fetch("univ_data.json");
+    if (!res.ok) throw new Error("univ_data.json 파일을 찾을 수 없습니다.");
+    UNIV_DATABASE = await res.json();
+    initDropdowns();
+  } catch (err) {
+    console.warn("JSON 로드 실패 (로컬 파일 실행 등), 기본 내장 데이터로 전환합니다.", err);
+    // 폴백 기본 데이터
+    UNIV_DATABASE = {
+      "경희대학교": {
+        evalRatio: { academic: 40, career: 40, community: 20 },
+        departments: {
+          "기계공학부": {
+            coreSubjects: ["수학Ⅰ", "수학Ⅱ", "미적분", "물리학Ⅰ", "물리학Ⅱ"],
+            optSubjects: ["확률과 통계", "기하"],
+            keywords: ["역학", "설계", "동력", "에너지", "모빌리티", "수식"],
+            guide: "설계 중심 사고와 미적분·역학 기반 수식 유도 역량을 중점 평가합니다."
+          }
+        }
+      }
+    };
+    initDropdowns();
+  }
+}
+
+function initDropdowns() {
+  const univSel = document.getElementById("univSelect");
+  univSel.innerHTML = "";
+  for (const univ in UNIV_DATABASE) {
+    const opt = document.createElement("option");
+    opt.value = univ;
+    opt.innerText = univ;
+    univSel.appendChild(opt);
+  }
+  updateDeptSelect();
+}
+
+function updateDeptSelect() {
+  const univ = document.getElementById("univSelect").value;
+  const deptSel = document.getElementById("deptSelect");
+  deptSel.innerHTML = "";
+  if (!UNIV_DATABASE[univ]) return;
+  const depts = UNIV_DATABASE[univ].departments;
+  for (const dept in depts) {
+    const opt = document.createElement("option");
+    opt.value = dept;
+    opt.innerText = dept;
+    deptSel.appendChild(opt);
+  }
+}
+
+window.addEventListener("DOMContentLoaded", loadUnivDatabase);
+
+// -------------------------------------------------------------
+// 파일 드롭존 핸들러
 // -------------------------------------------------------------
 function setupDropBox(boxId, fileInputId, handleFn) {
   const box = document.getElementById(boxId);
@@ -386,7 +431,7 @@ function handleGuidePdf(file) {
 }
 
 // -------------------------------------------------------------
-// 2. 대입 표준 평가 사전 및 가중치 정의
+// 대입 표준 평가 사전 및 가중치 정의
 // -------------------------------------------------------------
 const WEIGHTED_DICT = {
   academic: [
@@ -413,7 +458,7 @@ const COMMON_CORE_SUBJECTS = [
 ];
 
 // -------------------------------------------------------------
-// 3. 메인 분석 함수
+// 메인 분석 함수
 // -------------------------------------------------------------
 function runAnalysis() {
   const studentTxt = document.getElementById("studentText").value.trim();
@@ -445,7 +490,7 @@ function runAnalysis() {
   const cPct = totalWeighted ? Math.round((weightedScores.career / totalWeighted) * 100) : 33;
   const mPct = totalWeighted ? 100 - (aPct + cPct) : 34;
 
-  // 지표 갱신
+  // 바 & 지표 갱신
   document.getElementById("barAcademic").style.width = aPct + "%";
   document.getElementById("barAcademic").innerText = `학업 ${aPct}%`;
   document.getElementById("barCareer").style.width = cPct + "%";
@@ -468,64 +513,32 @@ function runAnalysis() {
   renderBadges("badgesCareer", matchedWords.career, "career");
   renderBadges("badgesCommunity", matchedWords.community, "community");
 
-  // 2. 생기부 영역 감지 렌더링
-  renderDetectedAreas(studentTxt);
-
-  // 3. 학년별 정밀 파싱 및 타임라인
+  // 2. 나이스 서식 완벽 대응 학년별 정밀 파싱
   const gradeBlocks = parseGradeBlocks(studentTxt);
   renderTimeline(gradeBlocks);
 
-  // 4. 선택 사항: B대학 요강 1:1 동적 매칭
+  // 3. 목표 대학 GAP 분석 (B 요강 직접 입력 우선, 없으면 드롭다운 프리셋 적용)
   if (guideTxt) {
-    document.getElementById("customMatchArea").style.display = "block";
     renderDynamicGuideMatching(studentTxt, guideTxt);
   } else {
-    document.getElementById("customMatchArea").style.display = "none";
+    renderPresetGuideMatching(studentTxt);
   }
+
+  // 4. 향후 생기부 작성/보완 가이드
+  renderActionPlanGuide(studentTxt, aPct, cPct, mPct, gradeBlocks);
 
   // 5. 강약점 심층 리포트
   renderStrengthsAndWeaknesses(studentTxt, aPct, cPct, mPct, weightedScores);
-
-  // 6. 향후 생기부 작성 및 보완 가이드 생성
-  renderActionPlanGuide(studentTxt, aPct, cPct, mPct, gradeBlocks);
 
   document.getElementById("resultSection").style.display = "block";
 }
 
 // -------------------------------------------------------------
-// 4. 영역 감지 렌더링 함수
-// -------------------------------------------------------------
-function renderDetectedAreas(text) {
-  const grid = document.getElementById("areaGrid");
-  grid.innerHTML = "";
-
-  const areas = [
-    { name: "교과학습발달상황(세특)", regex: /세부능력|특기사항|과목별/ },
-    { name: "자율활동", regex: /자율활동/ },
-    { name: "동아리활동", regex: /동아리활동/ },
-    { name: "진로활동", regex: /진로활동/ },
-    { name: "행동특성 및 종합의견", regex: /행동특성|종합의견/ },
-    { name: "출결상황", regex: /출결상황|결석|지각/ }
-  ];
-
-  areas.forEach(a => {
-    const isFound = a.regex.test(text);
-    grid.innerHTML += `
-      <div class="area-chip">
-        <h5>${a.name}</h5>
-        <span style="color:${isFound ? 'var(--green)' : 'var(--sub)'}">${isFound ? '감지됨 ✔' : '미감지'}</span>
-      </div>
-    `;
-  });
-}
-
-// -------------------------------------------------------------
-// 5. 학년 분할 및 타임라인 함수 (나이스 실제 표기 완전 대응)
+// 나이스 실제 서식 대응 정밀 학년 파서
 // -------------------------------------------------------------
 function parseGradeBlocks(fullText) {
   const blocks = {};
 
-  // 나이스 실제 서식(공백, 괄호, 특수기호) 정밀 정규식
   const getGradeIndex = (gNum) => {
     const regex = new RegExp(`(?:\\[|<|\\(|【)?\\s*(?:제\\s*)?${gNum}\\s*학\\s*년\\s*(?:\\]|>|\\)|】)?`, 'g');
     const match = regex.exec(fullText);
@@ -536,7 +549,6 @@ function parseGradeBlocks(fullText) {
   const g2Idx = getGradeIndex(2);
   const g3Idx = getGradeIndex(3);
 
-  // 학년 키워드가 실제로 존재하는 경우에만 해당 학년 블록 생성
   if (g1Idx !== -1 || g2Idx !== -1 || g3Idx !== -1) {
     if (g1Idx !== -1) {
       const end = (g2Idx !== -1 && g2Idx > g1Idx) ? g2Idx : ((g3Idx !== -1 && g3Idx > g1Idx) ? g3Idx : fullText.length);
@@ -549,9 +561,7 @@ function parseGradeBlocks(fullText) {
     if (g3Idx !== -1) {
       blocks["3학년"] = fullText.substring(g3Idx);
     }
-  } 
-  // 학년 표기가 아예 없는 단일 원문인 경우 (2개 학년 분량 자동 2분할)
-  else {
+  } else {
     const half = Math.floor(fullText.length / 2);
     blocks["1학년 (추정)"] = fullText.substring(0, half);
     blocks["2학년 (추정)"] = fullText.substring(half);
@@ -581,7 +591,7 @@ function renderTimeline(gradeBlocks) {
       }
     });
 
-    const barPercent = Math.min(100, Math.max(10, depthScore * 10));
+    const barPercent = Math.min(100, Math.max(15, depthScore * 10));
     const tagDisplay = foundKeywords.length > 0 
       ? foundKeywords.slice(0, 4).map(k => `• ${k}`).join("<br>") 
       : "기초 교과 활동 및 참여 위주 서술";
@@ -597,82 +607,83 @@ function renderTimeline(gradeBlocks) {
 }
 
 // -------------------------------------------------------------
-// 6. 향후 생기부 작성/보완 전략 가이드 생성 로직
+// 프리셋 DB 기반 GAP 분석 렌더링
 // -------------------------------------------------------------
-function renderActionPlanGuide(text, aPct, cPct, mPct, gradeBlocks) {
-  const container = document.getElementById("actionPlanContainer");
-  container.innerHTML = "";
+function renderPresetGuideMatching(studentTxt) {
+  const selectedUniv = document.getElementById("univSelect").value;
+  const selectedDept = document.getElementById("deptSelect").value;
+  const univData = UNIV_DATABASE[selectedUniv];
+  if (!univData || !univData.departments[selectedDept]) return;
+  const deptData = univData.departments[selectedDept];
 
-  const hasG3 = !!gradeBlocks["3학년"];
-  const targetNextGrade = hasG3 ? "3학년 2학기 및 면접 대비" : "3학년 1학기(대입 최종 학기)";
-
-  const plans = [];
-
-  // 가이드 1. 문장 서술 방식(인과 구조) 개선
-  const hasPassive = (text.match(/참여함|시청함|들음|학습함/g) || []).length;
-  const hasActive = (text.match(/도출함|증명함|분석함|제시함|설계함|구현함/g) || []).length;
-  
-  if (hasPassive >= hasActive) {
-    plans.push({
-      title: "1. 세특 서술 구조 혁신: 수동형 서술을 '4단계 인과 구조'로 전환",
-      desc: "현재 생기부는 단순 참여('~에 참여함', '~를 배움') 비중이 높습니다. 다음 학기 세특은 교사에게 제출하는 탐구 보고서부터 4단계 구조를 명확히 잡으세요.",
-      step: "<b>[작성 공식]</b> ① 수업 중 생긴 구체적 의문(호기심) $\\to$ ② 관련 학술자료/도서 스스로 탐독(자기주도) $\\to$ ③ 한계 극복 및 대안 도출(문제해결) $\\to$ ④ 배운 점 및 후속 탐구 의지"
-    });
-  } else {
-    plans.push({
-      title: "1. 서술 완결성 유지: 주도적 탐구의 '후속 학문 확장' 명시",
-      desc: "성과 동사가 훌륭하게 자리 잡혀 있습니다. 다음 학기에는 여기서 한 걸음 더 나아가 탐구 결과물이 다른 교과목과 융합되는 '학문 간 연계'를 보여주세요.",
-      step: "<b>[작성 공식]</b> '2학년 물리 세특에서 다룬 A 개념을 3학년 미적분 세특의 수식 모델링과 연계하여 심화함' 형태의 연결고리 구축"
-    });
-  }
-
-  // 가이드 2. 학업 vs 진로 역량 균형 보완
-  if (aPct < 30) {
-    plans.push({
-      title: `2. 학업역량(기초교과 심화) 보강: ${targetNextGrade} 핵심 과제`,
-      desc: "진로 프로젝트에 비해 기초 수학/과학/국어 과목의 원리 탐구 비중이 낮습니다. 대학은 '전공 지식' 이전에 '대학 공부를 따라올 기초 학업력'을 먼저 봅니다.",
-      step: "<b>[실천 가이드]</b> 주요 교과 세특에서 공식을 단순히 대입해 푼 수준을 넘어, '공식의 증명 과정', '이론의 한계점 비판', '심화 문제 해결'을 수행평가 주제로 선정하세요."
-    });
-  } else if (cPct < 25) {
-    plans.push({
-      title: `2. 진로역량(전공 쐐기 박기) 보강: ${targetNextGrade} 핵심 과제`,
-      desc: "목표 학과에 직결되는 전문 어휘와 구체적인 프로젝트 타이틀의 밀도가 낮습니다.",
-      step: "<b>[실천 가이드]</b> 3학년 진로선택과목(고급물리, 미적분, 경제수학, 사회문제탐구 등)에서 지원 희망 전공의 최신 학술 이슈를 직접 다룬 '1인 심화 연구 보고서'를 완성해 세특에 등재시키세요."
-    });
-  }
-
-  // 가이드 3. 독서 및 공동체 역량 보완
-  const bookCount = (text.match(/[『「<]([^』」>]+)[』」>]/g) || []).length;
-  if (bookCount < 2) {
-    plans.push({
-      title: "3. 배경 독서 이력 연계: '구글링 탐구'를 '학술 독서 탐구'로 격상",
-      desc: "생기부에 기호(『 』)로 표시된 전문 서적이 부족합니다. 입학사정관은 인터넷 검색 기반의 얕은 지식인지, 검증된 도서를 깊게 읽었는지를 정성 평가합니다.",
-      step: "<b>[실천 가이드]</b> 다음 학기 수행평가 제출 시, 반드시 전공 관련 권장 도서 1~2권을 인용하고 '『책 제목(저자)』을 탐독하고 책 속의 A 이론을 바탕으로 탐구를 확장함' 문구가 세특에 들어가도록 구성하세요."
-    });
-  }
-
-  // 가이드 4. 공동체 역량의 일화 구체화
-  if (mPct < 20 || !text.includes("갈등")) {
-    plans.push({
-      title: "4. 공동체 역량(협업/인성) 보완: '단순 착함' 대신 '갈등 조정 일화' 확보",
-      desc: "행특이나 자율활동이 '성실하고 예의 바름' 식의 모범생 평어에 머물러 있을 가능성이 높습니다.",
-      step: "<b>[실천 가이드]</b> 모둠 과제나 동아리 활동 중 '팀원 간 역할 불균형이나 의견 충돌이 발생했을 때, 내가 직접 경청하고 업무를 재조정하여 성공시킨 구체적 에피소드'를 교사에게 관찰되도록 행동하세요."
-    });
-  }
-
-  plans.forEach(p => {
-    container.innerHTML += `
-      <div class="guide-box">
-        <h3>${p.title}</h3>
-        <p>${p.desc}</p>
-        <div class="guide-step">${p.step}</div>
-      </div>
-    `;
+  const checkedCore = [];
+  const missingCore = [];
+  deptData.coreSubjects.forEach(subj => {
+    if (studentTxt.includes(subj)) checkedCore.push(subj);
+    else missingCore.push(subj);
   });
+
+  const checkedOpt = [];
+  const missingOpt = [];
+  deptData.optSubjects.forEach(subj => {
+    if (studentTxt.includes(subj)) checkedOpt.push(subj);
+    else missingOpt.push(subj);
+  });
+
+  let kwScore = 0;
+  const matchedKw = [];
+  deptData.keywords.forEach(kw => {
+    const matches = studentTxt.match(new RegExp(kw, 'g'));
+    if (matches) {
+      kwScore += matches.length;
+      matchedKw.push(`${kw}(x${matches.length})`);
+    }
+  });
+
+  const coreScore = (checkedCore.length / deptData.coreSubjects.length) * 50;
+  const optScore = deptData.optSubjects.length > 0 ? (checkedOpt.length / deptData.optSubjects.length) * 20 : 20;
+  const kwMatchScore = Math.min(30, kwScore * 3);
+  const totalMatchRate = Math.min(100, Math.round(coreScore + optScore + kwMatchScore));
+
+  const targetRatio = univData.evalRatio;
+  const container = document.getElementById("gapContainer");
+
+  container.innerHTML = `
+    <div class="gap-box">
+      <div class="gap-header">
+        <div>
+          <div class="gap-title">🏛 ${selectedUniv} - ${selectedDept}</div>
+          <div class="gap-meta">대학 전형 공식 반영비율: 학업 ${targetRatio.academic}% / 진로 ${targetRatio.career}% / 공동체 ${targetRatio.community}%</div>
+        </div>
+        <div class="gap-match">대학 정합성 지수: ${totalMatchRate}%</div>
+      </div>
+      
+      <div class="gap-item">
+        <b>① 대학 지정 핵심 권장과목(필수 이수 권장):</b><br>
+        ${checkedCore.length > 0 ? checkedCore.map(s => `<span class="pill checked">✔ ${s} (이수확인)</span>`).join("") : ""}
+        ${missingCore.length > 0 ? missingCore.map(s => `<span class="pill missing">▲ ${s} (미이수/미기재)</span>`).join("") : ""}
+      </div>
+
+      <div class="gap-item">
+        <b>② 권장 이수 과목(가산점/보완 과목):</b><br>
+        ${checkedOpt.length > 0 ? checkedOpt.map(s => `<span class="pill checked">✔ ${s}</span>`).join("") : ""}
+        ${missingOpt.length > 0 ? missingOpt.map(s => `<span class="pill missing">▲ ${s}</span>`).join("") : "<span style='font-size:0.8rem;color:var(--sub)'>별도 가산 권장과목 모두 충족</span>"}
+      </div>
+
+      <div class="gap-item">
+        <b>③ 학과 인재상 핵심 어휘 매칭:</b><br>
+        ${matchedKw.length > 0 ? matchedKw.map(k => `<span class="badge career">${k}</span>`).join(" ") : "<span style='font-size:0.82rem;color:var(--red)'>인재상 연계 어휘 부족</span>"}
+      </div>
+
+      <div class="gap-item" style="margin-top:14px; font-size:0.86rem; color:#78350f; background:#ffedd5; padding:12px; border-radius:8px;">
+        💡 <b>${selectedUniv} 입학사정관 심층 가이드:</b> ${deptData.guide}
+      </div>
+    </div>
+  `;
 }
 
 // -------------------------------------------------------------
-// 7. 대학 요강 동적 1:1 매칭 함수
+// B요강 직접 입력 시의 1:1 동적 매칭
 // -------------------------------------------------------------
 function renderDynamicGuideMatching(studentTxt, guideTxt) {
   const detectedGuideSubjects = COMMON_CORE_SUBJECTS.filter(subj => guideTxt.includes(subj));
@@ -703,6 +714,8 @@ function renderDynamicGuideMatching(studentTxt, guideTxt) {
   const kwScore = topGuideKeywords.length > 0 ? (matchedKws.length / topGuideKeywords.length) * 50 : 35;
   const finalMatch = Math.min(100, Math.round(subjScore + kwScore));
 
+  const customArea = document.getElementById("customMatchArea");
+  customArea.style.display = "block";
   document.getElementById("matchScoreVal").innerText = `정합도 지수: ${finalMatch}%`;
 
   document.getElementById("matchedGuideKeywords").innerHTML = matchedKws.length > 0
@@ -723,7 +736,77 @@ function renderDynamicGuideMatching(studentTxt, guideTxt) {
 }
 
 // -------------------------------------------------------------
-// 8. 강약점 심층 리포트
+// 향후 생기부 작성/보완 전략 가이드 생성
+// -------------------------------------------------------------
+function renderActionPlanGuide(text, aPct, cPct, mPct, gradeBlocks) {
+  const container = document.getElementById("actionPlanContainer");
+  container.innerHTML = "";
+
+  const hasG3 = !!gradeBlocks["3학년"];
+  const targetNextGrade = hasG3 ? "3학년 2학기 및 면접 대비" : "3학년 1학기(대입 최종 학기)";
+  const plans = [];
+
+  const hasPassive = (text.match(/참여함|시청함|들음|학습함/g) || []).length;
+  const hasActive = (text.match(/도출함|증명함|분석함|제시함|설계함|구현함/g) || []).length;
+  
+  if (hasPassive >= hasActive) {
+    plans.push({
+      title: "1. 세특 서술 구조 혁신: 수동형 서술을 '4단계 인과 구조'로 전환",
+      desc: "현재 생기부는 단순 참여('~에 참여함', '~를 배움') 비중이 높습니다. 다음 학기 세특은 교사에게 제출하는 탐구 보고서부터 4단계 구조를 명확히 잡으세요.",
+      step: "<b>[작성 공식]</b> ① 수업 중 생긴 구체적 의문(호기심) $\\to$ ② 관련 학술자료/도서 스스로 탐독(자기주도) $\\to$ ③ 한계 극복 및 대안 도출(문제해결) $\\to$ ④ 배운 점 및 후속 탐구 의지"
+    });
+  } else {
+    plans.push({
+      title: "1. 서술 완결성 유지: 주도적 탐구의 '후속 학문 확장' 명시",
+      desc: "성과 동사가 훌륭하게 자리 잡혀 있습니다. 다음 학기에는 여기서 한 걸음 더 나아가 탐구 결과물이 다른 교과목과 융합되는 '학문 간 연계'를 보여주세요.",
+      step: "<b>[작성 공식]</b> '2학년 물리 세특에서 다룬 A 개념을 3학년 미적분 세특의 수식 모델링과 연계하여 심화함' 형태의 연결고리 구축"
+    });
+  }
+
+  if (aPct < 30) {
+    plans.push({
+      title: `2. 학업역량(기초교과 심화) 보강: ${targetNextGrade} 핵심 과제`,
+      desc: "진로 프로젝트에 비해 기초 수학/과학/국어 과목의 원리 탐구 비중이 낮습니다. 대학은 '전공 지식' 이전에 '대학 공부를 따라올 기초 학업력'을 먼저 봅니다.",
+      step: "<b>[실천 가이드]</b> 주요 교과 세특에서 공식을 단순히 대입해 푼 수준을 넘어, '공식의 증명 과정', '이론의 한계점 비판', '심화 문제 해결'을 수행평가 주제로 선정하세요."
+    });
+  } else if (cPct < 25) {
+    plans.push({
+      title: `2. 진로역량(전공 쐐기 박기) 보강: ${targetNextGrade} 핵심 과제`,
+      desc: "목표 학과에 직결되는 전문 어휘와 구체적인 프로젝트 타이틀의 밀도가 낮습니다.",
+      step: "<b>[실천 가이드]</b> 3학년 진로선택과목(고급물리, 미적분, 경제수학, 사회문제탐구 등)에서 지원 희망 전공의 최신 학술 이슈를 직접 다룬 '1인 심화 연구 보고서'를 완성해 세특에 등재시키세요."
+    });
+  }
+
+  const bookCount = (text.match(/[『「<]([^』」>]+)[』」>]/g) || []).length;
+  if (bookCount < 2) {
+    plans.push({
+      title: "3. 배경 독서 이력 연계: '구글링 탐구'를 '학술 독서 탐구'로 격상",
+      desc: "생기부에 기호(『 』)로 표시된 전문 서적이 부족합니다. 입학사정관은 인터넷 검색 기반의 얕은 지식인지, 검증된 도서를 깊게 읽었는지를 정성 평가합니다.",
+      step: "<b>[실천 가이드]</b> 다음 학기 수행평가 제출 시, 반드시 전공 관련 권장 도서 1~2권을 인용하고 '『책 제목(저자)』을 탐독하고 책 속의 A 이론을 바탕으로 탐구를 확장함' 문구가 세특에 들어가도록 구성하세요."
+    });
+  }
+
+  if (mPct < 20 || !text.includes("갈등")) {
+    plans.push({
+      title: "4. 공동체 역량(협업/인성) 보완: '단순 착함' 대신 '갈등 조정 일화' 확보",
+      desc: "행특이나 자율활동이 '성실하고 예의 바름' 식의 모범생 평어에 머물러 있을 가능성이 높습니다.",
+      step: "<b>[실천 가이드]</b> 모둠 과제나 동아리 활동 중 '팀원 간 역할 불균형이나 의견 충돌이 발생했을 때, 내가 직접 경청하고 업무를 재조정하여 성공시킨 구체적 에피소드'를 교사에게 관찰되도록 행동하세요."
+    });
+  }
+
+  plans.forEach(p => {
+    container.innerHTML += `
+      <div class="guide-box">
+        <h3>${p.title}</h3>
+        <p>${p.desc}</p>
+        <div class="guide-step">${p.step}</div>
+      </div>
+    `;
+  });
+}
+
+// -------------------------------------------------------------
+// 강약점 심층 리포트
 // -------------------------------------------------------------
 function renderStrengthsAndWeaknesses(text, aPct, cPct, mPct, weightedScores) {
   const strengths = [];
@@ -787,7 +870,7 @@ function renderStrengthsAndWeaknesses(text, aPct, cPct, mPct, weightedScores) {
 }
 
 // -------------------------------------------------------------
-// 9. 샘플 데이터 및 리셋
+// 샘플 데이터 및 리셋
 // -------------------------------------------------------------
 function loadSampleData() {
   document.getElementById("studentText").value = 
@@ -800,12 +883,7 @@ function loadSampleData() {
 [2학년 - 창의적 체험활동 (동아리활동)]
 공학 동아리 기장으로서 '스마트 라인트레이서 로봇 제작' 프로젝트를 주도함. 모터 드라이버와 센서 감도 간의 제어 충돌 문제가 발생하자, 모둠원들과 회로도를 분석하여 디버깅을 성공시킴. 조원 간의 의견 차이로 인한 갈등을 적극적인 경청과 업무 재분담을 통해 조율함.`;
 
-  document.getElementById("guideText").value = 
-`[기계공학부 인재상 및 평가안내]
-기계공학부는 역학, 제어, 모빌리티 분야의 수학적 원리 이해와 실무적 설계 능력을 갖춘 인재를 선발합니다.
-권장 과목: 수학Ⅰ, 수학Ⅱ, 미적분, 기하, 물리학Ⅰ, 물리학Ⅱ
-평가 요소: 수학적 모델링 역량, 오차 분석 및 실험 설계, 팀 프로젝트 협업 능력`;
-
+  document.getElementById("guideText").value = "";
   runAnalysis();
 }
 
