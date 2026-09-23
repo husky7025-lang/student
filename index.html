@@ -152,6 +152,21 @@
   .guide-box p { font-size: 0.88rem; color: #78350f; line-height: 1.6; }
   .guide-step { margin-top: 8px; padding-left: 14px; border-left: 2px solid #fde68a; font-size: 0.84rem; color: #b45309; }
 
+  /* 전공 추천 카드 스타일 */
+  .recommend-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; margin-top: 14px; }
+  .rec-card { background: #fff; border: 1.5px solid var(--line); border-radius: 12px; padding: 18px; position: relative; transition: 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.02); display: flex; flex-direction: column; justify-content: space-between; }
+  .rec-card:hover { border-color: var(--academic); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
+  .rec-card.top1 { border-color: #f59e0b; background: #fffdf5; }
+  .rec-rank-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 0.76rem; font-weight: 900; padding: 3px 9px; border-radius: 6px; margin-bottom: 8px; width: fit-content; }
+  .rank-1 { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
+  .rank-2 { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
+  .rank-3 { background: #ffedd5; color: #c2410c; border: 1px solid #fed7aa; }
+  .rec-title { font-size: 1.08rem; font-weight: 800; color: var(--navy); margin-bottom: 4px; }
+  .rec-score { font-size: 1.25rem; font-weight: 900; color: var(--academic); }
+  .rec-desc { font-size: 0.84rem; color: #475569; line-height: 1.5; margin: 8px 0 12px; flex-grow: 1; }
+  .rec-btn { width: 100%; padding: 9px; font-size: 0.82rem; font-weight: 700; border-radius: 6px; border: 1px solid #cbd5e1; background: #fff; color: var(--navy); cursor: pointer; transition: 0.15s; }
+  .rec-btn:hover { background: var(--navy); color: #fff; border-color: var(--navy); }
+
   .badge { display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; margin: 2px; }
   .badge.academic { background: #dbeafe; color: var(--academic); }
   .badge.career { background: #ccfbf1; color: var(--career); }
@@ -195,7 +210,7 @@
       </div>
       <div>
         <label for="deptSelect">🎯 지원 희망 학과(모집단위) 선택</label>
-        <select id="deptSelect"></select>
+        <select id="deptSelect" onchange="onDeptSelectChange()"></select>
       </div>
     </div>
 
@@ -252,7 +267,17 @@
   <!-- 결과 영역 -->
   <div id="resultSection" style="display:none;">
     
-    <!-- 1. 목표 대학 맞춤 GAP 분석 카드 -->
+    <!-- 0. 생기부 기반 AI 최적 전공 분야 자동 추천 카드 -->
+    <div class="panel">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h2 style="font-size:1.18rem; color:var(--navy);">🎓 생기부 기반 AI 최적 전공 분야 자동 추천 (TOP 3)</h2>
+        <span style="font-size:0.82rem; color:var(--sub);">이수 과목·전문 어휘 밀도·탐구 성향 다면 분석</span>
+      </div>
+      <p style="font-size:0.86rem; color:var(--sub); margin-top:4px;">현재 학생부 기록상 서류 정합도 및 합격 잠재력이 가장 높은 상위 3대 전공 계열입니다. 전공 카드의 버튼을 누르면 하단 목표 대학 분석에 즉시 반영됩니다.</p>
+      <div class="recommend-container" id="recommendContainer"></div>
+    </div>
+
+    <!-- 1. 목표 대학 맞춤 적합도 갭(GAP) 분석 카드 -->
     <div class="panel">
       <div style="display:flex; justify-content:space-between; align-items:center;">
         <h2 style="font-size:1.18rem; color:var(--navy);">🎯 지원 목표 대학 맞춤 적합도 갭(GAP) 분석</h2>
@@ -460,6 +485,20 @@ function filterUnivList() {
   updateDeptSelect();
 }
 
+let lastAnalysisState = null;
+
+function onDeptSelectChange() {
+  if (lastAnalysisState && document.getElementById("resultSection").style.display !== "none" && !lastAnalysisState.guideTxt) {
+    renderPresetGuideMatching(
+      lastAnalysisState.studentTxt,
+      lastAnalysisState.aPct,
+      lastAnalysisState.cPct,
+      lastAnalysisState.mPct,
+      lastAnalysisState.lvlData
+    );
+  }
+}
+
 function updateDeptSelect() {
   const univ = document.getElementById("univSelect").value;
   const selectedCat = document.getElementById("categorySelect").value;
@@ -475,6 +514,16 @@ function updateDeptSelect() {
       opt.innerText = (depts[dept].category ? `[${depts[dept].category}] ` : "") + dept;
       deptSel.appendChild(opt);
     }
+  }
+
+  if (lastAnalysisState && document.getElementById("resultSection").style.display !== "none" && !lastAnalysisState.guideTxt) {
+    renderPresetGuideMatching(
+      lastAnalysisState.studentTxt,
+      lastAnalysisState.aPct,
+      lastAnalysisState.cPct,
+      lastAnalysisState.mPct,
+      lastAnalysisState.lvlData
+    );
   }
 }
 
@@ -1145,25 +1194,41 @@ function runAnalysis() {
   ];
   drawRadarChart(radarScores);
 
-  // 5. 목표 대학 맞춤 GAP 분석 (엄격 채점 인자 전달)
+  // 5. 생기부 기반 AI 최적 전공 분야 자동 추천 (TOP 3)
+  const topMajors = recommendTopMajors(studentTxt, sections, aPct, cPct, mPct, lvlData);
+  renderMajorRecommendations(topMajors);
+
+  // 6. 목표 대학 맞춤 적합도 GAP 분석 (엄격 채점 인자 전달)
   if (guideTxt) {
     renderDynamicGuideMatching(studentTxt, guideTxt, aPct, cPct, mPct, lvlData);
   } else {
     renderPresetGuideMatching(studentTxt, aPct, cPct, mPct, lvlData);
   }
 
-  // 6. 2026 기재금지어 & AI/과장 리스크 스크리닝
+  // 7. 2026 기재금지어 & AI/과장 리스크 스크리닝
   const auditData = performStudentAudit(studentTxt);
   renderAuditReport(auditData);
 
-  // 7. 교과목별 세특 아코디언 렌더링
+  // 8. 교과목별 세특 아코디언 렌더링
   renderSubjectAccordion(sections.subjects);
 
-  // 8. 향후 생기부 작성/보완 가이드
+  // 9. 향후 생기부 작성/보완 가이드
   renderActionPlanGuide(studentTxt, aPct, cPct, mPct, validBooks);
 
-  // 9. 강약점 심층 리포트
+  // 10. 강약점 심층 리포트
   renderStrengthsAndWeaknesses(studentTxt, aPct, cPct, mPct, validBooks);
+
+  // 현재 분석 상태 저장 (계열/대학/학과 변경 시 실시간 반영용)
+  lastAnalysisState = {
+    studentTxt,
+    guideTxt,
+    sections,
+    lvlData,
+    aPct,
+    cPct,
+    mPct,
+    validBooks
+  };
 
   document.getElementById("resultSection").style.display = "block";
 }
@@ -1268,6 +1333,256 @@ function toggleAccordion(id) {
   const el = document.getElementById(id);
   if (el) {
     el.style.display = (el.style.display === "block") ? "none" : "block";
+  }
+}
+
+// -------------------------------------------------------------
+// [AI 최적 전공 분야 자동 추천 엔진]
+// -------------------------------------------------------------
+const MAJOR_RECOMMEND_DOMAINS = [
+  {
+    name: "기계·로봇·모빌리티·항공",
+    category: "공학계열",
+    targetHint: "기계",
+    badge: "엔지니어링 / 첨단 모빌리티",
+    subjects: ["물리학Ⅰ", "물리학Ⅱ", "미적분", "기하", "수학Ⅰ", "수학Ⅱ"],
+    keywords: ["역학", "회생제동", "모빌리티", "전자기", "설계", "동력", "엔진", "차량", "제어", "유도 기전력", "항공", "기계", "로봇", "센서", "구동", "모터"],
+    desc: "물리학적 원리(전자기 유도, 역학)를 바탕으로 수식 모델링 및 하드웨어 제어·메커니즘 분석 역량이 매우 탁월합니다."
+  },
+  {
+    name: "전기전자·반도체·나노신소재",
+    category: "공학계열",
+    targetHint: "전자",
+    badge: "차세대 반도체 / 나노소자",
+    subjects: ["물리학Ⅰ", "물리학Ⅱ", "화학Ⅰ", "미적분", "기하"],
+    keywords: ["반도체", "회로", "나노", "전도성", "전기", "전자", "신소재", "그래핀", "탄소나노튜브", "저항", "다이오드", "집적회로", "웨이퍼", "소자"],
+    desc: "신소재의 미시적 분자 구조와 전기적 성질 규명, 회로 및 반도체 소자 물성 탐구에 최적화된 서류를 보유하고 있습니다."
+  },
+  {
+    name: "컴퓨터·AI·데이터사이언스",
+    category: "공학계열",
+    targetHint: "컴퓨터",
+    badge: "SW / 인공지능 / 빅데이터",
+    subjects: ["수학Ⅰ", "수학Ⅱ", "미적분", "확률과 통계", "정보", "인공지능"],
+    keywords: ["알고리즘", "코딩", "데이터", "인공지능", "프로그래밍", "시뮬레이션", "소프트웨어", "디버깅", "자율주행", "파이썬", "최적화", "연산", "머신러닝"],
+    desc: "수학적 논리 추론력을 바탕으로 알고리즘 설계와 시뮬레이션 구현, 데이터 최적화 분석 역량이 돋보입니다."
+  },
+  {
+    name: "화학공학·이차전지·친환경에너지",
+    category: "공학계열",
+    targetHint: "화학",
+    badge: "배터리 / 신재생 에너지",
+    subjects: ["화학Ⅰ", "화학Ⅱ", "물리학Ⅰ", "미적분"],
+    keywords: ["화학", "분자", "반응속도", "에너지", "배터리", "이차전지", "결합", "촉매", "고분자", "합성", "열역학", "전해질", "전극", "친환경"],
+    desc: "화학적 반응 메커니즘과 에너지 변환 효율 고찰, 친환경 배터리 및 고분자 소재 분야의 탐구 완성도가 높습니다."
+  },
+  {
+    name: "의약학·바이오·생명과학",
+    category: "의약학/보건계열",
+    targetHint: "생명",
+    badge: "의약학 / 바이오헬스",
+    subjects: ["생명과학Ⅰ", "생명과학Ⅱ", "화학Ⅰ", "화학Ⅱ"],
+    keywords: ["유전자", "세포", "단백질", "효소", "면역", "생명", "임상", "약물", "신경", "질병", "바이오", "DNA", "생체", "항원", "백신", "수용체"],
+    desc: "생명체의 정밀 생체 기전 및 질병·유전자 메커니즘을 규명하고 보건·의약학적 문제해결에 접근하는 열정이 뛰어납니다."
+  },
+  {
+    name: "경영·경제·빅데이터금융",
+    category: "사회/상경계열",
+    targetHint: "경영",
+    badge: "비즈니스 / 금융·데이터",
+    subjects: ["수학Ⅰ", "수학Ⅱ", "확률과 통계", "경제", "미적분"],
+    keywords: ["경제", "경영", "시장", "소비자", "통계", "금융", "수요", "공급", "마케팅", "비용", "효율", "데이터분석", "투자", "예측", "재무"],
+    desc: "시장 현상과 통계적 데이터 분석을 융합하여 합리적 의사결정을 모델링하는 상경계열 학문 적합성을 지닙니다."
+  },
+  {
+    name: "사회과학·미디어·공공정책",
+    category: "사회/상경계열",
+    targetHint: "사회",
+    badge: "미디어 / 법·행정 / 정책",
+    subjects: ["사회·문화", "정치와 법", "생활과 윤리", "국어"],
+    keywords: ["사회", "미디어", "정책", "시민", "공공", "커뮤니케이션", "제도", "여론", "갈등", "인권", "복지", "법률", "언론", "공동체"],
+    desc: "사회적 이슈에 대한 다각적 비판의식과 공동체 문제해결을 위한 제도·정책적 대안 제시 역량이 두드러집니다."
+  },
+  {
+    name: "인문·어문학·문화콘텐츠",
+    category: "인문계열",
+    targetHint: "국어",
+    badge: "인문학 / 텍스트·문화비평",
+    subjects: ["국어", "문학", "독서", "윤리와 사상", "세계사", "한국사"],
+    keywords: ["철학", "문학", "역사", "비판", "텍스트", "담론", "윤리", "인간", "언어", "문화", "고전", "해석", "사상", "의미"],
+    desc: "풍부한 독서 이력과 텍스트 비판적 분석력, 인간과 문화를 관통하는 인문학적 성찰 깊이가 남다릅니다."
+  }
+];
+
+function recommendTopMajors(studentTxt, sections, aPct, cPct, mPct, lvlData) {
+  const normTxt = normalizeSubject(studentTxt);
+  const results = [];
+
+  MAJOR_RECOMMEND_DOMAINS.forEach(dom => {
+    // 1. 이수 과목 일치도 (최대 30점)
+    let matchedSubjCount = 0;
+    const detectedSubjs = [];
+    dom.subjects.forEach(s => {
+      const normS = normalizeSubject(s);
+      if (studentTxt.includes(s) || normTxt.includes(normS)) {
+        matchedSubjCount++;
+        detectedSubjs.push(s);
+      }
+    });
+    const maxSubjTarget = Math.min(3, dom.subjects.length);
+    const subjScore = Math.min(30, Math.round((matchedSubjCount / maxSubjTarget) * 30));
+
+    // 2. 전문 어휘 다양성 및 밀도 (최대 45점)
+    let uniqueKwCount = 0;
+    let totalKwMatches = 0;
+    const matchedKwList = [];
+
+    dom.keywords.forEach(kw => {
+      const m = studentTxt.match(new RegExp(kw, 'g'));
+      if (m && m.length > 0) {
+        uniqueKwCount++;
+        totalKwMatches += m.length;
+        matchedKwList.push({ kw, count: m.length });
+      }
+    });
+
+    const kwDiversity = Math.min(25, uniqueKwCount * 5);
+    const kwDensity = Math.min(20, Math.round(totalKwMatches * 2));
+    const kwScore = Math.min(45, kwDiversity + kwDensity);
+
+    // 3. 탐구 성향 및 계열 적합도 밸런스 점수 (최대 25점)
+    let balanceScore = 10;
+    if (dom.category === "공학계열" || dom.category === "자연과학계열") {
+      if (cPct >= 35) balanceScore += 5;
+      if (lvlData && lvlData.avgLevel >= 2.5) balanceScore += 5;
+      if (studentTxt.includes("수식") || studentTxt.includes("실험") || studentTxt.includes("모델링")) balanceScore += 5;
+    } else if (dom.category === "사회/상경계열") {
+      if (cPct >= 30 && aPct >= 30) balanceScore += 5;
+      if (studentTxt.includes("통계") || studentTxt.includes("조사") || studentTxt.includes("분석")) balanceScore += 5;
+      if (studentTxt.includes("갈등") || studentTxt.includes("조율")) balanceScore += 5;
+    } else if (dom.category === "의약학/보건계열") {
+      if (lvlData && lvlData.avgLevel >= 3.0) balanceScore += 7;
+      if (studentTxt.includes("실험") || studentTxt.includes("세포") || studentTxt.includes("기전")) balanceScore += 8;
+    } else {
+      if (studentTxt.includes("비판") || studentTxt.includes("성찰") || studentTxt.includes("고찰")) balanceScore += 8;
+      if (studentTxt.includes("『") || studentTxt.includes("「")) balanceScore += 7;
+    }
+    balanceScore = Math.min(25, balanceScore);
+
+    const rawScore = subjScore + kwScore + balanceScore + (totalKwMatches * 0.1) + (uniqueKwCount * 0.2);
+    const totalScore = Math.min(99, Math.max(15, Math.round(rawScore)));
+
+    results.push({
+      domain: dom,
+      rawScore,
+      totalScore,
+      subjScore,
+      kwScore,
+      balanceScore,
+      matchedSubjs: detectedSubjs,
+      matchedKws: matchedKwList.sort((a, b) => b.count - a.count).slice(0, 5)
+    });
+  });
+
+  results.sort((a, b) => b.rawScore - a.rawScore);
+  return results.slice(0, 3);
+}
+
+function renderMajorRecommendations(top3) {
+  const container = document.getElementById("recommendContainer");
+  if (!container) return;
+  container.innerHTML = "";
+
+  const rankBadges = [
+    { cls: "rank-1", text: "🥇 최적 적합 1순위 (강력 추천)", topCls: "top1" },
+    { cls: "rank-2", text: "🥈 유력 적합 2순위", topCls: "" },
+    { cls: "rank-3", text: "🥉 연계 적합 3순위", topCls: "" }
+  ];
+
+  top3.forEach((r, idx) => {
+    const b = rankBadges[idx] || rankBadges[2];
+    const subjsHtml = r.matchedSubjs.length > 0 
+      ? r.matchedSubjs.map(s => `<span class="pill checked" style="font-size:0.73rem; padding:2px 7px;">✔ ${s}</span>`).join(" ") 
+      : "<span style='font-size:0.75rem; color:var(--sub);'>직접 일치 과목 없음</span>";
+
+    const kwsHtml = r.matchedKws.length > 0
+      ? r.matchedKws.map(k => `<span class="badge ${idx === 0 ? 'career' : 'academic'}" style="font-size:0.72rem; padding:2px 6px;">#${k.kw}(${k.count})</span>`).join(" ")
+      : "<span style='font-size:0.75rem; color:var(--sub);'>어휘 미감지</span>";
+
+    container.innerHTML += `
+      <div class="rec-card ${b.topCls}">
+        <div>
+          <div class="rec-rank-badge ${b.cls}">${b.text}</div>
+          <div class="rec-title">${r.domain.name}</div>
+          <div style="font-size:0.76rem; color:var(--sub); font-weight:700; margin-bottom:4px;">[${r.domain.category}] · ${r.domain.badge}</div>
+          <div style="display:flex; align-items:baseline; gap:6px; margin: 6px 0 10px;">
+            <span class="rec-score">${r.totalScore}점</span>
+            <span style="font-size:0.75rem; color:var(--sub);">/ 100점 만점</span>
+          </div>
+          <p class="rec-desc">${r.domain.desc}</p>
+          
+          <div style="margin-bottom:8px;">
+            <div style="font-size:0.75rem; font-weight:800; color:#334155; margin-bottom:4px;">🔑 핵심 발견 키워드:</div>
+            <div>${kwsHtml}</div>
+          </div>
+          
+          <div style="margin-bottom:14px;">
+            <div style="font-size:0.75rem; font-weight:800; color:#334155; margin-bottom:4px;">📚 연계 이수 과목:</div>
+            <div>${subjsHtml}</div>
+          </div>
+        </div>
+
+        <button class="rec-btn" onclick="applyRecommendedMajor('${r.domain.category}', '${r.domain.targetHint}')">
+          🎯 이 전공으로 1:1 맞춤 진단 적용 ➔
+        </button>
+      </div>
+    `;
+  });
+}
+
+function applyRecommendedMajor(catName, targetHint) {
+  const catSel = document.getElementById("categorySelect");
+  if (catSel) {
+    catSel.value = catName;
+    filterUnivList();
+  }
+  
+  const deptSel = document.getElementById("deptSelect");
+  if (deptSel && deptSel.options.length > 0) {
+    let matchedIndex = -1;
+    for (let i = 0; i < deptSel.options.length; i++) {
+      const optText = deptSel.options[i].text;
+      const optVal = deptSel.options[i].value;
+      if (optText.includes(targetHint) || optVal.includes(targetHint)) {
+        matchedIndex = i;
+        break;
+      }
+    }
+    if (matchedIndex !== -1) {
+      deptSel.selectedIndex = matchedIndex;
+    } else {
+      deptSel.selectedIndex = 0;
+    }
+  }
+
+  if (lastAnalysisState) {
+    renderPresetGuideMatching(
+      lastAnalysisState.studentTxt,
+      lastAnalysisState.aPct,
+      lastAnalysisState.cPct,
+      lastAnalysisState.mPct,
+      lastAnalysisState.lvlData
+    );
+  }
+
+  const gapEl = document.getElementById("gapContainer");
+  if (gapEl) {
+    gapEl.scrollIntoView({ behavior: "smooth", block: "center" });
+    gapEl.style.transition = "box-shadow 0.3s ease";
+    gapEl.style.boxShadow = "0 0 0 3px rgba(37, 99, 235, 0.4)";
+    setTimeout(() => {
+      gapEl.style.boxShadow = "none";
+    }, 1200);
   }
 }
 
@@ -1672,6 +1987,9 @@ function resetAll() {
   document.getElementById("guideStatus").style.display = "none";
   document.getElementById("resultSection").style.display = "none";
   document.getElementById("progressWrap").style.display = "none";
+  const recEl = document.getElementById("recommendContainer");
+  if (recEl) recEl.innerHTML = "";
+  lastAnalysisState = null;
 }
 
 function getFallbackDatabase() {
