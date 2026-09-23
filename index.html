@@ -1435,11 +1435,26 @@ function recommendTopMajors(studentTxt, sections, aPct, cPct, mPct, lvlData) {
   const normTxt = normalizeSubject(studentTxt);
   const avgLevel = lvlData ? parseFloat(lvlData.avgLevel) : 2.0;
 
-  // 0단계: 학생의 대계열(STEM vs 인문사회) 궤적 자동 판별
-  const stemSubjects = ["물리학Ⅰ", "물리학Ⅱ", "화학Ⅰ", "화학Ⅱ", "생명과학Ⅰ", "생명과학Ⅱ", "지구과학Ⅰ", "지구과학Ⅱ", "미적분", "기하", "정보", "인공지능"];
-  const stemSubjCount = stemSubjects.filter(s => studentTxt.includes(s) || normTxt.includes(normalizeSubject(s))).length;
-  const stemKwMatches = studentTxt.match(/수식|실험|원리|유도|역학|회로|코딩|알고리즘|분자|세포|유전자|모빌리티|반도체|화학|물리|생명|공학|데이터/g) || [];
-  const isStemOriented = (stemSubjCount >= 2 && stemKwMatches.length >= 6) || stemSubjCount >= 3;
+  // 0단계: 학생의 대계열(STEM vs 인문사회) 궤적 자동 판별 (1학년 통합과학/과학탐구실험/수학 전면 반영)
+  const stemSubjPattern = /통합과학|과학탐구|물리학|물리|화학|생명과학|생물|지구과학|미적분|기하|수학|정보|인공지능|공학|프로그래밍/g;
+  const stemSubjMatches = (studentTxt.match(stemSubjPattern) || []).length;
+  
+  const stemKwPattern = /과학|실험|수식|원리|공학|분자|세포|반도체|에너지|알고리즘|코딩|물리|화학|생명|모빌리티|기계|수학적|기술|오차|가설|유도|시뮬레이션|전기|전자|센서|회로|단백질|효소|유전자/g;
+  const stemKwMatches = (studentTxt.match(stemKwPattern) || []).length;
+  const stemScore = stemSubjMatches * 2 + stemKwMatches;
+
+  const humSubjPattern = /정치와\s*법|사회문제|사회·문화|생활과\s*윤리|윤리와\s*사상|경제|세계사|동아시아사|한국지리|세계지리|철학|고전\s*읽기|심화\s*국어|문예/g;
+  const humSubjMatches = (studentTxt.match(humSubjPattern) || []).length;
+  const humKwPattern = /문학비평|작가론|철학사|인문학|해석학|실존주의|담론분석|공공정책|의제설정|사회보장|입법|미디어|여론조사|시민참여|법률|사상사|언어학/g;
+  const humKwMatches = (studentTxt.match(humKwPattern) || []).length;
+  const humScore = humSubjMatches * 2 + humKwMatches;
+
+  const isStemOriented = (stemScore >= 6 && stemScore > humScore * 1.2);
+  const isHumOriented = (humScore >= 6 && humScore > stemScore * 1.2);
+
+  let trackDesc = "계열 융합·자율 탐색 단계 (문·이과 미정)";
+  if (isStemOriented) trackDesc = "🔬 이공·자연과학계열 성향 감지 (세부 전공 미정)";
+  else if (isHumOriented) trackDesc = "📖 인문·사회계열 성향 감지 (세부 전공 미정)";
 
   // 1단계: 각 도메인별 원시 지표 수집
   let totalSpecMatchesAll = 0;
@@ -1533,15 +1548,15 @@ function recommendTopMajors(studentTxt, sections, aPct, cPct, mPct, lvlData) {
     let total = d.subjScore + d.kwScore + d.inquiryScore + specShareScore;
 
     // [⭐ 사정관 기준 엄격 필터링: 전공 키워드 미감지 및 교차 계열 불일치 감점]
-    // 1. 도메인 특화 전문 어휘가 0건이면 최대 28점 상한 (TOP 3 추천 차단)
+    // 1. 도메인 특화 전문 어휘가 0건이면 최대 25점 상한 (TOP 3 추천 차단)
     if (d.totSpec === 0) {
-      total = Math.min(28, total);
+      total = Math.min(25, total);
     }
 
     // 2. 이공계열(STEM) 학생인데 인문 전문 활동이 전무한 경우 강력 감점 (독서 단순 언급으로 인한 오분류 차단)
     if (isStemOriented && d.dom.category === "인문계열") {
       if (d.mSpec.length < 2) {
-        total = Math.min(18, total - 30);
+        total = Math.min(10, total - 35);
       }
     }
 
@@ -1559,27 +1574,89 @@ function recommendTopMajors(studentTxt, sections, aPct, cPct, mPct, lvlData) {
       inquiryScore: d.inquiryScore,
       specShareScore: specShareScore,
       sharePct: Math.round(share * 100),
+      totSpec: d.totSpec,
       matchedSubjs: [...d.coreMatches, ...d.genMatches],
       matchedKws: combinedKws
     });
   });
 
   results.sort((a, b) => b.totalScore - a.totalScore || b.specShareScore - a.specShareScore);
-  return results.slice(0, 3);
+
+  // [진로 미확정 / 명확한 전공분야 없음 판별]
+  // 최고 득점 전공이 45점 미만이거나, 발견된 전문 전공 키워드가 0건인 경우
+  const highestScore = results.length > 0 ? results[0].totalScore : 0;
+  const isUndecided = (highestScore < 45) || (totalSpecMatchesAll === 0);
+
+  return {
+    isUndecided: isUndecided,
+    trackDesc: trackDesc,
+    highestScore: highestScore,
+    top3: results.slice(0, 3),
+    allResults: results
+  };
 }
 
-function renderMajorRecommendations(top3) {
+function renderMajorRecommendations(recData) {
   const container = document.getElementById("recommendContainer");
   if (!container) return;
   container.innerHTML = "";
 
+  // [사용자 요청 반영: 진로가 애매한 경우 솔직하게 '명확한 전공분야 없음' 표출]
+  if (recData.isUndecided) {
+    const candidateCardsHtml = recData.top3.map(r => `
+      <div style="border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; background: #fafafa; display: flex; flex-direction: column; justify-content: space-between;">
+        <div>
+          <div style="font-size: 0.74rem; font-weight: 800; color: #64748b; margin-bottom: 2px;">[${r.domain.category}] 잠재 탐색 계열</div>
+          <div style="font-weight: 800; color: #0f172a; font-size: 0.95rem; margin-bottom: 4px;">${r.domain.name}</div>
+          <div style="font-size: 0.8rem; color: #64748b; margin-bottom: 8px;">
+            현재 적합도: <b style="color: #d97706;">${r.totalScore}점</b> <span style="font-size:0.72rem; color:#dc2626; font-weight:700;">(전공 쐐기 활동 부재)</span>
+          </div>
+        </div>
+        <button class="rec-btn" style="padding: 6px 8px; font-size: 0.78rem;" onclick="applyRecommendedMajor('${r.domain.category}', '${r.domain.targetHint}')">
+          이 계열로 목표 대학 요강 GAP 진단 ➔
+        </button>
+      </div>
+    `).join("");
+
+    container.innerHTML = `
+      <div style="background: #f8fafc; border: 2px dashed #94a3b8; border-radius: 12px; padding: 24px 18px; text-align: center; margin-top: 6px;">
+        <div style="font-size: 2.2rem; margin-bottom: 6px;">🧭</div>
+        <h3 style="font-size: 1.25rem; color: #0f172a; font-weight: 800; margin-bottom: 6px;">
+          현재 생기부상 '명확한 전공분야 없음' (진로 미확정·기초 탐색 단계)
+        </h3>
+        <div style="display: inline-block; padding: 4px 14px; background: #e0f2fe; color: #0369a1; border-radius: 20px; font-size: 0.84rem; font-weight: 800; margin-bottom: 12px; border: 1px solid #bae6fd;">
+          🚩 감지된 기본 적성: ${recData.trackDesc}
+        </div>
+        <p style="font-size: 0.88rem; color: #475569; max-width: 740px; margin: 0 auto 16px; line-height: 1.6;">
+          입력된 생활기록부 기록은 특정 학과(기계, 컴퓨터, 화학 등)에 특화된 심화 프로젝트나 전문 용어 대신, <b>공통 기초 교과 및 진로 탐색 위주</b>로 기록되어 있습니다. 입학사정관 기준 '전공 쐐기(Specialization)'가 아직 형성되지 않아 세부 전공을 억지로 단정 짓지 않고 현재 드러난 미세 적성 후보군을 제시합니다.
+        </p>
+
+        <!-- 잠재 탐색 후보군 -->
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px; max-width: 840px; margin: 0 auto 16px; text-align: left;">
+          <b style="font-size: 0.85rem; color: #1e293b; display: block; margin-bottom: 10px;">
+            💡 기초 기록 기반 잠재 관심 계열 (참고용 후보 - 전공 쐐기 활동 필요):
+          </b>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px;">
+            ${candidateCardsHtml}
+          </div>
+        </div>
+
+        <div style="font-size: 0.84rem; color: #b45309; background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 12px 16px; max-width: 840px; margin: 0 auto; text-align: left; line-height: 1.5;">
+          📢 <b>사정관의 냉정 조언:</b> 학생부종합전형에서 상위권 대학에 지원하려면 2학년 말~3학년 초까지 목표 학과에 직결되는 '1인 심화 연구 보고서'와 '위계적 선택과목'을 반드시 구축해야 합격선(70점 이상)에 도달합니다. 조속히 1~2개 관심 학과를 확정하고 수행평가 주제를 구체화하세요.
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  // [뚜렷한 전공 지향성이 발견된 경우: TOP 3 추천 카드 렌더링]
   const rankBadges = [
     { cls: "rank-1", text: "🥇 최적 적합 1순위 (강력 추천)", topCls: "top1" },
     { cls: "rank-2", text: "🥈 유력 적합 2순위 (경쟁력 확보)", topCls: "" },
     { cls: "rank-3", text: "🥉 연계 적합 3순위 (서브/융합 지원)", topCls: "" }
   ];
 
-  top3.forEach((r, idx) => {
+  recData.top3.forEach((r, idx) => {
     const b = rankBadges[idx] || rankBadges[2];
     const subjsHtml = r.matchedSubjs.length > 0 
       ? r.matchedSubjs.map(s => `<span class="pill checked" style="font-size:0.73rem; padding:2px 7px;">✔ ${s}</span>`).join(" ") 
