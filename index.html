@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>학생부종합 심층 역량 진단 & 대입 요강 정합도 분석기</title>
+<title>학생부종합 심층 역량 진단 & 대입 요강 자동 파싱 분석기</title>
 <!-- PDF.js CDN -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
@@ -178,12 +178,12 @@
 <div class="wrap">
   <header class="noprint">
     <h1>📋 생활기록부 종합 심층 역량 진단기</h1>
-    <p><b>2026/2028 대입 표준 역량 진단</b>, <b>나이스 글자수/바이트 점검</b>, <b>기재금지어 & AI 리스크 스크리닝</b>, <b>목표 대학 1:1 GAP 분석</b></p>
+    <p><b>모집요강 자동 파싱</b>, <b>2026 기재금지어 & AI 리스크 스크리닝</b>, <b>나이스 바이트 충실도</b>, <b>대학별 1:1 정합도 진단</b></p>
     <div class="privacy-tag">🔒 서버 전송 없는 100% 로컬 브라우저 분석 (학생 개인정보 완벽 보호)</div>
   </header>
 
   <div class="panel noprint">
-    <!-- 목표 대학 프리셋 선택 (univ_data.json 자동 연동) -->
+    <!-- 목표 대학 프리셋 선택 (univ_data.json 자동 연동 + 자동 파싱 연동) -->
     <div class="target-select-wrap">
       <div>
         <label for="categorySelect">📂 지원 계열 필터</label>
@@ -210,12 +210,13 @@
       </div>
       <input type="file" id="studentFile" accept=".pdf" style="display:none" onchange="handleStudentPdf(this.files[0])">
 
+      <!-- [제미나이 기능 반영] 자동 파싱 요강 드롭존 -->
       <div class="drop-box optional" id="guideDrop" onclick="document.getElementById('guideFile').click()">
-        <span class="badge-req opt">선택 (신규 요강 직접비교)</span>
+        <span class="badge-req opt">자동 파싱 (신규 요강)</span>
         <div class="icon">🏛</div>
         <p>B. 새 대학 모집요강 / 가이드북</p>
-        <span>프리셋에 없는 대학의 모집요강 PDF를 넣으면 실시간 1:1 매칭</span>
-        <div class="file-status" id="guideStatus">✅ 요강 탑재 완료</div>
+        <span>PDF를 올리면 <b>자동으로 데이터를 읽어 DB에 즉시 등록</b>합니다</span>
+        <div class="file-status" id="guideStatus">✅ 자동 파싱 완료</div>
       </div>
       <input type="file" id="guideFile" accept=".pdf" style="display:none" onchange="handleGuidePdf(this.files[0])">
     </div>
@@ -235,9 +236,9 @@
       </div>
       <div>
         <label style="font-size:0.82rem; font-weight:800; color:var(--sub); display:block; margin-bottom:4px;">
-          B. 목표 대학 요강 문구 (선택 사항)
+          B. 목표 대학 요강 문구 / 자동 파싱 결과 텍스트
         </label>
-        <textarea id="guideText" placeholder="(선택사항) 새 대학 요강 문구를 넣으면 프리셋 대신 이 문구와 1:1 매칭합니다..."></textarea>
+        <textarea id="guideText" placeholder="PDF를 올리면 자동 파싱된 핵심 요강 텍스트가 여기에 채워집니다 (직접 붙여넣기도 가능)..."></textarea>
       </div>
     </div>
 
@@ -402,7 +403,6 @@ async function loadUnivDatabase() {
     console.log("univ_data.json 연동 성공, 대학 목록:", Object.keys(UNIV_DATABASE));
   } catch (err) {
     console.warn("외부 JSON 파일 연동 실패, 기본 백업 데이터를 활용합니다.", err);
-    // 오프라인 fallback 내장
     UNIV_DATABASE = getFallbackDatabase();
   }
   initCategorySelect();
@@ -469,7 +469,7 @@ function updateDeptSelect() {
   
   const depts = UNIV_DATABASE[univ].departments;
   for (const dept in depts) {
-    if (selectedCat === "전체 계열" || depts[dept].category === selectedCat) {
+    if (selectedCat === "전체 계열" || depts[dept].category === selectedCat || !depts[dept].category) {
       const opt = document.createElement("option");
       opt.value = dept;
       opt.innerText = (depts[dept].category ? `[${depts[dept].category}] ` : "") + dept;
@@ -479,6 +479,69 @@ function updateDeptSelect() {
 }
 
 window.addEventListener("DOMContentLoaded", loadUnivDatabase);
+
+// -------------------------------------------------------------
+// [신규 통합 기능] 업로드된 요강 PDF 텍스트에서 대학 DB 자동 추출 및 메모리 등록
+// -------------------------------------------------------------
+function parseGuidePdfText(pdfText, fileName) {
+  // 1. 대학 이름 자동 감지 (파일명 또는 본문 내 '대학교' 키워드 앞 단어)
+  let univName = fileName.replace(/\.[^/.]+$/, "").replace(/[^가-힣a-zA-Z]/g, "");
+  if (!univName || univName.length < 2) univName = "신규 파싱 대학";
+
+  const knownUnivs = [
+    "충남대학교", "부산대학교", "경북대학교", "전남대학교", "전북대학교", 
+    "중앙대학교", "경희대학교", "건국대학교", "국민대학교", "단국대학교", 
+    "한양대학교", "동국대학교", "광운대학교", "서울대학교", "고려대학교", 
+    "연세대학교", "성균관대학교", "서강대학교", "서울시립대학교", "이화여자대학교", "인하대학교"
+  ];
+  for (const u of knownUnivs) {
+    if (pdfText.includes(u)) {
+      univName = u;
+      break;
+    }
+  }
+
+  // 2. 권장 과목 자동 감지 (정규화 호환)
+  const normPdf = normalizeSubject(pdfText);
+  const detectedCore = COMMON_CORE_SUBJECTS.filter(s => {
+    return pdfText.includes(s) || normPdf.includes(normalizeSubject(s));
+  });
+
+  // 3. 인재상 및 키워드 추출 (불용어 제거 및 빈도 분석)
+  const rawWords = pdfText.match(/[가-힣]{2,6}/g) || [];
+  const stopWords = new Set(["모집", "전형", "안내", "가이드", "대학", "학과", "학생", "전체", "해당", "경우", "이수", "과목", "평가", "기준", "사항", "등록", "선발", "수시", "정시", "입학", "요강", "제출", "서류", "확인"]);
+  const wordFreq = {};
+  rawWords.forEach(w => {
+    if (!stopWords.has(w)) wordFreq[w] = (wordFreq[w] || 0) + 1;
+  });
+  const topKeywords = Object.entries(wordFreq).sort((a, b) => b[1] - a[1]).slice(0, 8).map(e => e[0]);
+
+  // 4. DB 자동 등록 (메모리 반영 및 드롭다운 갱신)
+  if (!UNIV_DATABASE[univName]) {
+    UNIV_DATABASE[univName] = {
+      evalRatio: { academic: 35, career: 45, community: 20 },
+      departments: {}
+    };
+  }
+
+  const autoDeptName = "자동파싱 모집단위 (전체 공통)";
+  UNIV_DATABASE[univName].departments[autoDeptName] = {
+    category: "자율/융합",
+    coreSubjects: detectedCore.length > 0 ? detectedCore.slice(0, 5) : ["수학Ⅰ", "미적분"],
+    optSubjects: detectedCore.length > 5 ? detectedCore.slice(5, 10) : ["확률과 통계"],
+    keywords: topKeywords.length > 0 ? topKeywords : ["탐구력", "자기주도성", "전공적합성", "학업역량"],
+    guide: `업로드된 [${fileName}] 문서에서 자동 파싱된 기준입니다. 추출된 핵심 권장과목(${detectedCore.slice(0, 4).join(', ') || '기초수학'}) 및 인재상 어휘를 바탕으로 정합도를 진단합니다.`
+  };
+
+  // 계열 필터를 '전체 계열'로 전환 후 대학 자동 선택
+  document.getElementById("categorySelect").value = "전체 계열";
+  filterUnivList();
+  document.getElementById("univSelect").value = univName;
+  updateDeptSelect();
+  document.getElementById("deptSelect").value = autoDeptName;
+
+  alert(`✨ [${univName}] 모집요강이 성공적으로 자동 파싱되어 데이터베이스에 등록되었습니다!\n상단 선택창에서 바로 1:1 맞춤 정합성 분석이 가능합니다.`);
+}
 
 // -------------------------------------------------------------
 // 파일 드롭존 핸들러
@@ -554,7 +617,10 @@ function handleGuidePdf(file) {
   extractTextFromPdf(file, "guideStatus", txt => {
     document.getElementById("guideText").value = txt;
     document.getElementById("guideStatus").style.display = "block";
-    document.getElementById("guideStatus").innerText = `✅ 요강 추출 완료 (${file.name})`;
+    document.getElementById("guideStatus").innerText = `✅ 자동 파싱 완료 (${file.name})`;
+    
+    // [제미나이 기능 반영] 요강 PDF 업로드 시 자동으로 DB에 반영하는 파서 호출
+    parseGuidePdfText(txt, file.name);
   });
 }
 
@@ -603,23 +669,18 @@ function parseNeisSections(text) {
     behavior: ""     // 행동특성 및 종합의견
   };
 
-  // 1. 자율활동 추출
   const autoMatch = text.match(/(?:자\s*율\s*활\s*동)(?:[\s:：\-\]])([\s\S]*?)(?=(?:동\s*아\s*리\s*활\s*동|진\s*로\s*활\s*동|봉\s*사\s*활\s*동|교\s*과\s*학\s*습|행\s*동\s*특\s*성|$))/i);
   if (autoMatch) sections.autonomy = autoMatch[1].trim();
 
-  // 2. 동아리활동 추출
   const clubMatch = text.match(/(?:동\s*아\s*리\s*활\s*동)(?:[\s:：\-\]])([\s\S]*?)(?=(?:진\s*로\s*활\s*동|봉\s*사\s*활\s*동|교\s*과\s*학\s*습|행\s*동\s*특\s*성|$))/i);
   if (clubMatch) sections.club = clubMatch[1].trim();
 
-  // 3. 진로활동 추출
   const careerMatch = text.match(/(?:진\s*로\s*활\s*동)(?:[\s:：\-\]])([\s\S]*?)(?=(?:봉\s*사\s*활\s*동|교\s*과\s*학\s*습|세\s*부\s*능\s*력|행\s*동\s*특\s*성|$))/i);
   if (careerMatch) sections.career = careerMatch[1].trim();
 
-  // 4. 행동특성 및 종합의견 추출
   const behavMatch = text.match(/(?:행\s*동\s*특\s*성\s*및\s*종\s*합\s*의\s*견|행\s*특)(?:[\s:：\-\]])([\s\S]*?)$/i);
   if (behavMatch) sections.behavior = behavMatch[1].trim();
 
-  // 5. 과목별 세부능력 및 특기사항 파싱
   const subjRegex = /(?:\[|\<|【|\()?\s*([가-힣A-Za-z0-9ⅠⅡIIVV\s·]+?)\s*(?:세\s*부\s*능\s*력|세\s*특|세부능력\s*및\s*특기사항)(?:\]|\>|】|\))?[\s:：\-\]]([\s\S]*?)(?=(?:\[|\<|【|\()?\s*[가-힣A-Za-z0-9ⅠⅡIIVV\s·]+?\s*(?:세\s*부\s*능\s*력|세\s*특|세부능력\s*및\s*특기사항)|(?:행\s*동\s*특\s*성|창\s*의\s*적|$))/gi;
   let sMatch;
   while ((sMatch = subjRegex.exec(text)) !== null) {
@@ -630,7 +691,6 @@ function parseNeisSections(text) {
     }
   }
 
-  // 만약 정규식으로 과목별 분리가 안 된 경우 백업: 일반 주요 과목명으로 스캔
   if (Object.keys(sections.subjects).length === 0) {
     const coreList = ["국어", "문학", "독서", "수학", "수학Ⅰ", "수학Ⅱ", "미적분", "확률과 통계", "기하", "영어", "물리학Ⅰ", "물리학Ⅱ", "화학Ⅰ", "화학Ⅱ", "생명과학Ⅰ", "생명과학Ⅱ", "지구과학Ⅰ", "지구과학Ⅱ", "통합과학", "통합사회", "한국사", "사회·문화", "생활과 윤리", "경제", "정치와 법", "정보", "인공지능 수학"];
     coreList.forEach(cName => {
@@ -647,10 +707,9 @@ function parseNeisSections(text) {
 }
 
 // -------------------------------------------------------------
-// [신규 엔진] 2026 학교생활기록부 기재요령 위반 & 리스크 스크리닝
+// [2026 교육부 기재요령 위반 & 리스크 스크리닝]
 // -------------------------------------------------------------
 const PROHIBITED_PATTERNS = [
-  // 1. 공인어학성적
   { word: "토익", type: "공인어학성적 기재 금지", reason: "TOEIC 등 공인어학시험 성적·취득 사실은 기재 불가 (불합격/0점 처리 요인)" },
   { word: "TOEIC", type: "공인어학성적 기재 금지", reason: "공인어학시험 명칭 직접 노출 금지" },
   { word: "토플", type: "공인어학성적 기재 금지", reason: "TOEFL 성적 기재 불가" },
@@ -661,21 +720,15 @@ const PROHIBITED_PATTERNS = [
   { word: "테셋", type: "공인인증 기재 금지", reason: "공인 인증시험 명칭 기재 불가" },
   { word: "JLPT", type: "공인어학성적 기재 금지", reason: "외국어 공인시험 등급/명칭 노출 금지" },
   { word: "HSK", type: "공인어학성적 기재 금지", reason: "외국어 공인시험 등급/명칭 노출 금지" },
-  
-  // 2. 교외 수상실적 및 경시대회
   { word: "올림피아드", type: "교외 수상/대회 기재 금지", reason: "수학·과학·정보 올림피아드 등 교외 대회 일체 기재 금지" },
   { word: "KMO", type: "교외 수상/대회 기재 금지", reason: "한국수학올림피아드 등 사교육 유발 교외대회 기재 금지" },
   { word: "교외 대회", type: "교외 수상/대회 기재 금지", reason: "교외 수상 및 참가 사실 기록 금지" },
   { word: "전국대회 입상", type: "교외 수상/대회 기재 금지", reason: "공식 교육과정 외 교외 수상 실적 기재 불가" },
-  
-  // 3. 사교육 유발 요인 (논문, 학회지, 도서출판, 특허)
   { word: "소논문", type: "사교육 유발(논문) 기재 금지", reason: "2024 대입부터 소논문(연구보고서) 작성 사실 일체 기재 금지" },
   { word: "학회지", type: "사교육 유발(논문) 기재 금지", reason: "논문 학회지 등재/투고 사실 기재 금지" },
   { word: "R&E", type: "소논문 연구 기재 주의", reason: "교외 연구기관 연계 R&E 논문 형태의 기재는 감점 대상" },
   { word: "특허 출원", type: "지식재산권 기재 금지", reason: "특허, 실용신안, 상표 등록 등 지식재산권 일체 기재 불가" },
   { word: "도서 출간", type: "도서 출판 기재 금지", reason: "학생 개인의 공식 출판 및 ISBN 등록 도서 기재 불가" },
-
-  // 4. 부모/친인척 사회경제적 지위 암시
   { word: "아버지가 의사", type: "부모 배경 노출 금지", reason: "부모 및 친인척의 직업·직위 노출 시 감점/불합격 처리" },
   { word: "어머니가 교수", type: "부모 배경 노출 금지", reason: "부모의 사회경제적 지위 암시 진술 금지" },
   { word: "부모님이 변호사", type: "부모 배경 노출 금지", reason: "친인척 법조계 직업 노출 금지" },
@@ -707,10 +760,8 @@ const AUDIT_PATTERNS = {
 function performStudentAudit(text) {
   const warnings = [];
   let riskScore = 0;
-
   const rawSentences = text.split(/[.!?\n]/).map(s => s.trim()).filter(s => s.length > 5);
 
-  // 1. 기재금지어 탐색 (중대 위반)
   PROHIBITED_PATTERNS.forEach(p => {
     if (text.includes(p.word)) {
       const matchSent = rawSentences.find(s => s.includes(p.word)) || p.word;
@@ -726,7 +777,6 @@ function performStudentAudit(text) {
     }
   });
 
-  // 2. AI 문체 및 과장 표현 탐색
   rawSentences.forEach(sentence => {
     AUDIT_PATTERNS.aiStyle.forEach(p => {
       if (sentence.includes(p.word)) {
@@ -812,11 +862,11 @@ function renderAuditReport(auditData) {
 }
 
 // -------------------------------------------------------------
-// [신규 엔진] 입학사정관 기준 4단계 탐구 질적 수준(Level 1~4) 분석
+// [4단계 탐구 질적 수준(Level 1~4) 분석]
 // -------------------------------------------------------------
 function analyzeInquiryLevels(text) {
   const sentences = text.split(/[.!?\n]/).map(s => s.trim()).filter(s => s.length > 8);
-  if (sentences.length === 0) return { counts: [0,0,0,0], pcts: [25,25,25,25], avgLevel: 2.0 };
+  if (sentences.length === 0) return { counts: [0,0,0,0], pcts: [25,25,25,25], avgLevel: 2.0, totalSentences: 0 };
 
   const l4Patterns = ["융합하여", "연계하여", "한계를 극복", "대안을 제시", "프로토타입을 제작", "후속 탐구", "독창적", "수식 모델링", "새로운 시각"];
   const l3Patterns = ["수식을 유도", "원리를 증명", "가설을 설정", "실험을 설계", "오차를 분석", "수치적으로 도출", "비판적으로 고찰", "메커니즘을 규명"];
@@ -830,7 +880,7 @@ function analyzeInquiryLevels(text) {
     else if (l3Patterns.some(p => s.includes(p))) c3++;
     else if (l2Patterns.some(p => s.includes(p))) c2++;
     else if (l1Patterns.some(p => s.includes(p))) c1++;
-    else c2++; // 기본 탐구 서술로 간주
+    else c2++;
   });
 
   const total = sentences.length || 1;
@@ -893,7 +943,7 @@ function renderInquiryLevels(lvlData) {
 }
 
 // -------------------------------------------------------------
-// [신규 엔진] 순수 HTML5 Canvas 6각 역량 레이더 차트 (외부 CDN 없음)
+// [순수 HTML5 Canvas 6각 역량 레이더 차트]
 // -------------------------------------------------------------
 function drawRadarChart(scores) {
   const canvas = document.getElementById("radarChart");
@@ -911,7 +961,6 @@ function drawRadarChart(scores) {
   const numAxes = labels.length;
   const angleStep = (Math.PI * 2) / numAxes;
 
-  // 1. 배경 격자망 (4단계)
   ctx.strokeStyle = "#e2e8f0";
   ctx.lineWidth = 1;
   for (let level = 1; level <= 4; level++) {
@@ -928,7 +977,6 @@ function drawRadarChart(scores) {
     ctx.stroke();
   }
 
-  // 2. 축 선 & 라벨
   ctx.strokeStyle = "#cbd5e1";
   ctx.font = "bold 11px -apple-system, sans-serif";
   ctx.fillStyle = "#475569";
@@ -945,14 +993,11 @@ function drawRadarChart(scores) {
     ctx.lineTo(x, y);
     ctx.stroke();
 
-    // 라벨 위치
     const labelX = cX + (radius + 22) * Math.cos(angle);
     const labelY = cY + (radius + 18) * Math.sin(angle);
     ctx.fillText(labels[i], labelX, labelY);
   }
 
-  // 3. 학생 데이터 다각형 렌더링
-  // scores: 0~100 사이 6개 값
   ctx.beginPath();
   for (let i = 0; i < numAxes; i++) {
     const val = Math.max(15, Math.min(100, scores[i] || 30));
@@ -965,14 +1010,12 @@ function drawRadarChart(scores) {
   }
   ctx.closePath();
 
-  // 내부 채우기 (반투명 파랑)
   ctx.fillStyle = "rgba(37, 99, 235, 0.25)";
   ctx.fill();
   ctx.strokeStyle = "#2563eb";
   ctx.lineWidth = 2.5;
   ctx.stroke();
 
-  // 각 점 원 그리기
   for (let i = 0; i < numAxes; i++) {
     const val = Math.max(15, Math.min(100, scores[i] || 30));
     const r = (radius * val) / 100;
@@ -1018,7 +1061,6 @@ const COMMON_CORE_SUBJECTS = [
   "정치와 법", "사회·문화", "경제", "윤리와 사상", "생활과 윤리", "한국지리", "세계지리", "사회문제 탐구"
 ];
 
-// 과목 표기 정규화 (로마자 Ⅰ/Ⅱ <-> 아라비아 숫자 1/2 호환)
 function normalizeSubject(s) {
   return s.replace(/\s+/g, '')
           .replace(/I{2}|II|2/g, 'Ⅱ')
@@ -1066,7 +1108,6 @@ function runAnalysis() {
   const cPct = totalWeighted ? Math.round((weightedScores.career / totalWeighted) * 100) : 33;
   const mPct = totalWeighted ? 100 - (aPct + cPct) : 34;
 
-  // 바 & 지표 갱신
   document.getElementById("barAcademic").style.width = aPct + "%";
   document.getElementById("barAcademic").innerText = `학업 ${aPct}%`;
   document.getElementById("barCareer").style.width = cPct + "%";
@@ -1095,12 +1136,12 @@ function runAnalysis() {
   const validBooks = rawBooks.filter(b => !invalidBookNames.has(b.trim()));
 
   const radarScores = [
-    Math.min(95, Math.round(weightedScores.academic * 1.8) + 20),      // 기초학업력
-    Math.min(98, Math.round(lvlData.avgLevel * 23)),                  // 심화탐구력
-    Math.min(95, Object.keys(sections.subjects).length * 15 + 30),    // 전공교과이수
-    Math.min(95, Math.round(weightedScores.career * 1.8) + validBooks.length * 8 + 15), // 전공지향성
-    Math.min(95, Math.round(weightedScores.community * 2.2) + 25),    // 협업소통
-    Math.min(95, (studentTxt.includes("갈등") ? 85 : 45) + (studentTxt.includes("리더십") ? 10 : 0)) // 리더십인성
+    Math.min(95, Math.round(weightedScores.academic * 1.8) + 20),
+    Math.min(98, Math.round(lvlData.avgLevel * 23)),
+    Math.min(95, Object.keys(sections.subjects).length * 15 + 30),
+    Math.min(95, Math.round(weightedScores.career * 1.8) + validBooks.length * 8 + 15),
+    Math.min(95, Math.round(weightedScores.community * 2.2) + 25),
+    Math.min(95, (studentTxt.includes("갈등") ? 85 : 45) + (studentTxt.includes("리더십") ? 10 : 0))
   ];
   drawRadarChart(radarScores);
 
@@ -1543,7 +1584,6 @@ function resetAll() {
   document.getElementById("progressWrap").style.display = "none";
 }
 
-// 오프라인 fallback 데이터베이스
 function getFallbackDatabase() {
   return {
     "충남대학교": {
