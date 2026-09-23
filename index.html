@@ -1145,11 +1145,11 @@ function runAnalysis() {
   ];
   drawRadarChart(radarScores);
 
-  // 5. 목표 대학 맞춤 GAP 분석
+  // 5. 목표 대학 맞춤 GAP 분석 (엄격 채점 인자 전달)
   if (guideTxt) {
-    renderDynamicGuideMatching(studentTxt, guideTxt);
+    renderDynamicGuideMatching(studentTxt, guideTxt, aPct, cPct, mPct, lvlData);
   } else {
-    renderPresetGuideMatching(studentTxt);
+    renderPresetGuideMatching(studentTxt, aPct, cPct, mPct, lvlData);
   }
 
   // 6. 2026 기재금지어 & AI/과장 리스크 스크리닝
@@ -1272,9 +1272,9 @@ function toggleAccordion(id) {
 }
 
 // -------------------------------------------------------------
-// 프리셋 DB 기반 GAP 분석 렌더링 (과목명 정규화 호환)
+// [엄격·냉정 평가 엔진] 프리셋 DB 기반 GAP 분석 렌더링
 // -------------------------------------------------------------
-function renderPresetGuideMatching(studentTxt) {
+function renderPresetGuideMatching(studentTxt, aPct, cPct, mPct, lvlData) {
   const selectedUniv = document.getElementById("univSelect").value;
   const selectedDept = document.getElementById("deptSelect").value;
   const univData = UNIV_DATABASE[selectedUniv];
@@ -1283,9 +1283,13 @@ function renderPresetGuideMatching(studentTxt) {
 
   const normStudentTxt = normalizeSubject(studentTxt);
 
+  // 1. 교과 이수 체계 엄격 점검 (최대 35점)
+  const hasCoreSpec = deptData.coreSubjects && deptData.coreSubjects.length > 0;
+  const hasOptSpec = deptData.optSubjects && deptData.optSubjects.length > 0;
+
   const checkedCore = [];
   const missingCore = [];
-  deptData.coreSubjects.forEach(subj => {
+  (deptData.coreSubjects || []).forEach(subj => {
     const normSubj = normalizeSubject(subj);
     if (studentTxt.includes(subj) || normStudentTxt.includes(normSubj)) checkedCore.push(subj);
     else missingCore.push(subj);
@@ -1293,30 +1297,75 @@ function renderPresetGuideMatching(studentTxt) {
 
   const checkedOpt = [];
   const missingOpt = [];
-  deptData.optSubjects.forEach(subj => {
+  (deptData.optSubjects || []).forEach(subj => {
     const normSubj = normalizeSubject(subj);
     if (studentTxt.includes(subj) || normStudentTxt.includes(normSubj)) checkedOpt.push(subj);
     else missingOpt.push(subj);
   });
 
-  let kwScore = 0;
+  let courseScore = 0;
+  if (hasCoreSpec && hasOptSpec) {
+    const coreRate = checkedCore.length / deptData.coreSubjects.length;
+    const optRate = checkedOpt.length / deptData.optSubjects.length;
+    courseScore = Math.round(coreRate * 25 + optRate * 10);
+  } else if (hasCoreSpec && !hasOptSpec) {
+    const coreRate = checkedCore.length / deptData.coreSubjects.length;
+    courseScore = Math.round(coreRate * 35);
+  } else if (!hasCoreSpec && hasOptSpec) {
+    const optRate = checkedOpt.length / deptData.optSubjects.length;
+    courseScore = Math.round(optRate * 35);
+  } else {
+    courseScore = 25; // 별도 지정 없을 시 기본 25점 인정
+  }
+
+  // 2. 인재상 & 전문 학술 어휘 적합도 엄격 점검 (최대 30점)
+  let uniqueKwCount = 0;
+  let totalKwOccurrences = 0;
   const matchedKw = [];
-  deptData.keywords.forEach(kw => {
+  
+  (deptData.keywords || []).forEach(kw => {
     const matches = studentTxt.match(new RegExp(kw, 'g'));
-    if (matches) {
-      kwScore += matches.length;
+    if (matches && matches.length > 0) {
+      uniqueKwCount++;
+      totalKwOccurrences += matches.length;
       matchedKw.push(`${kw}(x${matches.length})`);
     }
   });
 
-  const coreScore = deptData.coreSubjects.length > 0 ? (checkedCore.length / deptData.coreSubjects.length) * 50 : 50;
-  const optScore = deptData.optSubjects.length > 0 ? (checkedOpt.length / deptData.optSubjects.length) * 20 : 20;
-  const kwMatchScore = Math.min(30, kwScore * 3);
-  const totalMatchRate = Math.min(100, Math.round(coreScore + optScore + kwMatchScore));
+  const totalPossibleKw = Math.max(3, (deptData.keywords || []).length);
+  const kwDiversityScore = Math.min(15, Math.round((uniqueKwCount / Math.min(4, totalPossibleKw)) * 15));
+  const kwDensityScore = Math.min(15, Math.round(totalKwOccurrences * 2.5));
+  const keywordScore = Math.min(30, kwDiversityScore + kwDensityScore);
 
-  const targetRatio = univData.evalRatio;
+  // 3. 대학 전형 공식 반영비율 vs 학생 실제 역량 점유율 오차(GAP) (최대 20점)
+  const targetRatio = univData.evalRatio || { academic: 40, career: 40, community: 20 };
+  const gapDiff = (Math.abs(targetRatio.academic - (aPct || 33)) + Math.abs(targetRatio.career - (cPct || 33)) + Math.abs(targetRatio.community - (mPct || 34))) / 2;
+  const ratioFitScore = Math.max(0, Math.round(20 - (gapDiff * 0.7)));
+
+  // 4. 사정관 질적 탐구 수준(Level 1~4) 엄격 보정 (최대 15점)
+  const avgLvl = lvlData ? parseFloat(lvlData.avgLevel) : 2.0;
+  const levelScore = Math.max(3, Math.min(15, Math.round((avgLvl - 1) * 4 + 3)));
+
+  // 총점 (100점 만점)
+  const totalMatchRate = Math.min(100, Math.max(5, courseScore + keywordScore + ratioFitScore + levelScore));
+
+  let gradeBadge = "";
+  let badgeColor = "";
+  if (totalMatchRate >= 85) {
+    gradeBadge = "🟢 최상위 정합도 (합격 유력)";
+    badgeColor = "background:#dcfce7; color:#16a34a; border:1px solid #bbf7d0;";
+  } else if (totalMatchRate >= 70) {
+    gradeBadge = "🔵 적정 정합도 (경쟁력 확보)";
+    badgeColor = "background:#eff6ff; color:#2563eb; border:1px solid #bfdbfe;";
+  } else if (totalMatchRate >= 55) {
+    gradeBadge = "🟠 소신 지원 (전공 역량 보완 시급)";
+    badgeColor = "background:#fffbeb; color:#d97706; border:1px solid #fde68a;";
+  } else {
+    gradeBadge = "🔴 위험 수준 (서류 탈락 위험 / 불일치)";
+    badgeColor = "background:#fee2e2; color:#dc2626; border:1px solid #fecaca;";
+  }
+
   const container = document.getElementById("gapContainer");
-
   container.innerHTML = `
     <div class="gap-box">
       <div class="gap-header">
@@ -1324,37 +1373,67 @@ function renderPresetGuideMatching(studentTxt) {
           <div class="gap-title">🏛 ${selectedUniv} - ${selectedDept}</div>
           <div class="gap-meta">대학 전형 공식 반영비율: 학업 ${targetRatio.academic}% / 진로 ${targetRatio.career}% / 공동체 ${targetRatio.community}%</div>
         </div>
-        <div class="gap-match">대학 정합성 지수: ${totalMatchRate}%</div>
+        <div style="text-align:right;">
+          <div class="gap-match" style="${badgeColor}">냉정 정합성: ${totalMatchRate}%</div>
+          <div style="font-size:0.75rem; font-weight:800; margin-top:4px; color:#475569;">${gradeBadge}</div>
+        </div>
+      </div>
+
+      <!-- 냉정 평가 점수 분해표 -->
+      <div style="background:#fff; border:1px solid #fed7aa; border-radius:8px; padding:12px 14px; margin-bottom:14px; font-size:0.83rem;">
+        <b style="color:#9a3412; display:block; margin-bottom:6px;">📊 사정관 관점 냉정 채점 점수표 (총 100점 만점):</b>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:8px; text-align:center;">
+          <div style="background:#f8fafc; padding:8px; border-radius:6px; border:1px solid #e2e8f0;">
+            <div style="font-size:0.72rem; color:var(--sub);">① 교과 이수 (35점)</div>
+            <b style="font-size:1.05rem; color:${courseScore < 20 ? 'var(--red)' : 'var(--navy)'};">${courseScore}점</b>
+          </div>
+          <div style="background:#f8fafc; padding:8px; border-radius:6px; border:1px solid #e2e8f0;">
+            <div style="font-size:0.72rem; color:var(--sub);">② 인재상 어휘 (30점)</div>
+            <b style="font-size:1.05rem; color:${keywordScore < 15 ? 'var(--red)' : 'var(--navy)'};">${keywordScore}점</b>
+          </div>
+          <div style="background:#f8fafc; padding:8px; border-radius:6px; border:1px solid #e2e8f0;">
+            <div style="font-size:0.72rem; color:var(--sub);">③ 전형비율 적합 (20점)</div>
+            <b style="font-size:1.05rem; color:${ratioFitScore < 10 ? 'var(--red)' : 'var(--navy)'};">${ratioFitScore}점</b>
+            <div style="font-size:0.68rem; color:var(--sub);">(편차 ${Math.round(gapDiff)}%)</div>
+          </div>
+          <div style="background:#f8fafc; padding:8px; border-radius:6px; border:1px solid #e2e8f0;">
+            <div style="font-size:0.72rem; color:var(--sub);">④ 탐구 질적수준 (15점)</div>
+            <b style="font-size:1.05rem; color:${levelScore < 8 ? 'var(--red)' : 'var(--navy)'};">${levelScore}점</b>
+            <div style="font-size:0.68rem; color:var(--sub);">(Lv.${avgLvl})</div>
+          </div>
+        </div>
       </div>
       
       <div class="gap-item">
         <b>① 대학 지정 핵심 권장과목:</b><br>
         ${checkedCore.length > 0 ? checkedCore.map(s => `<span class="pill checked">✔ ${s} (이수확인)</span>`).join("") : ""}
-        ${missingCore.length > 0 ? missingCore.map(s => `<span class="pill missing">▲ ${s} (미이수/미기재)</span>`).join("") : (deptData.coreSubjects.length === 0 ? "<span style='font-size:0.8rem;color:var(--sub)'>별도 지정 핵심과목 없음</span>" : "")}
+        ${missingCore.length > 0 ? missingCore.map(s => `<span class="pill missing">▲ ${s} (미이수/미기재)</span>`).join("") : (deptData.coreSubjects.length === 0 ? "<span style='font-size:0.8rem;color:var(--sub)'>별도 지정 핵심과목 없음 (권장과목 및 일반선택으로 평가)</span>" : "")}
       </div>
 
       <div class="gap-item">
         <b>② 권장 이수 과목:</b><br>
         ${checkedOpt.length > 0 ? checkedOpt.map(s => `<span class="pill checked">✔ ${s}</span>`).join("") : ""}
-        ${missingOpt.length > 0 ? missingOpt.map(s => `<span class="pill missing">▲ ${s}</span>`).join("") : "<span style='font-size:0.8rem;color:var(--sub)'>권장과목 모두 충족 또는 별도 지정 없음</span>"}
+        ${missingOpt.length > 0 ? missingOpt.map(s => `<span class="pill missing">▲ ${s} (미이수)</span>`).join("") : "<span style='font-size:0.8rem;color:var(--sub)'>권장과목 모두 충족 또는 별도 지정 없음</span>"}
       </div>
 
       <div class="gap-item">
-        <b>③ 학과 인재상 핵심 어휘 매칭:</b><br>
-        ${matchedKw.length > 0 ? matchedKw.map(k => `<span class="badge career">${k}</span>`).join(" ") : "<span style='font-size:0.82rem;color:var(--red)'>인재상 연계 어휘 부족</span>"}
+        <b>③ 학과 인재상 핵심 어휘 매칭 (밀도 및 출현 검증):</b><br>
+        ${matchedKw.length > 0 ? matchedKw.map(k => `<span class="badge career">${k}</span>`).join(" ") : "<span style='font-size:0.82rem; color:var(--red); font-weight:800;'>⚠️ 학과 특화 인재상 키워드 출현 전무 (0점 감점 처리됨)</span>"}
       </div>
 
       <div class="gap-item" style="margin-top:14px; font-size:0.86rem; color:#78350f; background:#ffedd5; padding:12px; border-radius:8px;">
-        💡 <b>입학사정관 심층 가이드:</b> ${deptData.guide}
+        💡 <b>입학사정관 냉정 총평:</b> ${deptData.guide}
+        ${keywordScore === 0 ? '<br><b style="color:var(--red);">[긴급 보완]</b> 현재 학생부에는 해당 학과 인재상 관련 어휘나 전공 학술 활동이 전혀 반영되어 있지 않습니다. 관련 교과 세특이나 동아리활동에 전공 심화 탐구 기록을 반드시 보충해야 합니다.' : ''}
+        ${gapDiff > 15 ? `<br><b style="color:var(--orange);">[전형 불균형]</b> 대학의 공식 평가비율과 학생부의 실제 역량 비율 간 편차가 <b>${Math.round(gapDiff)}%</b>로 큽니다. 대학이 중시하는 역량 영역을 집중 보강하세요.` : ''}
       </div>
     </div>
   `;
 }
 
 // -------------------------------------------------------------
-// B요강 직접 입력 시의 1:1 동적 매칭
+// B요강 직접 입력 시의 1:1 동적 매칭 (엄격 평가 모델)
 // -------------------------------------------------------------
-function renderDynamicGuideMatching(studentTxt, guideTxt) {
+function renderDynamicGuideMatching(studentTxt, guideTxt, aPct, cPct, mPct, lvlData) {
   const normStudentTxt = normalizeSubject(studentTxt);
   const detectedGuideSubjects = COMMON_CORE_SUBJECTS.filter(subj => guideTxt.includes(subj));
   const checkedSubjs = [];
@@ -1381,9 +1460,17 @@ function renderDynamicGuideMatching(studentTxt, guideTxt) {
     else missingKws.push(kw);
   });
 
-  const subjScore = detectedGuideSubjects.length > 0 ? (checkedSubjs.length / detectedGuideSubjects.length) * 50 : 35;
-  const kwScore = topGuideKeywords.length > 0 ? (matchedKws.length / topGuideKeywords.length) * 50 : 35;
-  const finalMatch = Math.min(100, Math.round(subjScore + kwScore));
+  // 1. 과목 이수 (35점 만점)
+  const subjScore = detectedGuideSubjects.length > 0 ? Math.round((checkedSubjs.length / detectedGuideSubjects.length) * 35) : 25;
+  // 2. 키워드 적합도 (35점 만점)
+  const kwScore = topGuideKeywords.length > 0 ? Math.round((matchedKws.length / topGuideKeywords.length) * 35) : 20;
+  // 3. 탐구 수준 보정 (30점 만점)
+  const avgLvl = lvlData ? parseFloat(lvlData.avgLevel) : 2.0;
+  const levelScore = Math.max(5, Math.min(30, Math.round((avgLvl - 1) * 8 + 6)));
+
+  const finalMatch = Math.min(100, Math.max(10, subjScore + kwScore + levelScore));
+
+  let gradeBadge = finalMatch >= 80 ? "🟢 양호 (일치도 우수)" : (finalMatch >= 60 ? "🟠 보통 (보완 권장)" : "🔴 주의 (정합도 부족)");
 
   const customArea = document.getElementById("gapContainer");
   customArea.innerHTML = `
@@ -1391,14 +1478,17 @@ function renderDynamicGuideMatching(studentTxt, guideTxt) {
       <div class="gap-header">
         <div>
           <div class="gap-title" style="color:var(--purple);">🎯 업로드된 대학 요강 1:1 정합도 진단</div>
-          <div class="gap-meta" style="color:#7e22ce;">입력된 요강 텍스트의 핵심 지표와 권장 과목을 실시간 파싱한 결과입니다.</div>
+          <div class="gap-meta" style="color:#7e22ce;">입력된 요강 텍스트의 핵심 지표와 권장 과목을 실시간 파싱하여 엄격 채점한 결과입니다.</div>
         </div>
-        <div class="gap-match" style="background:#f3e8ff; color:var(--purple);">정합도 지수: ${finalMatch}%</div>
+        <div style="text-align:right;">
+          <div class="gap-match" style="background:#f3e8ff; color:var(--purple);">정합도 지수: ${finalMatch}%</div>
+          <div style="font-size:0.75rem; font-weight:800; margin-top:4px; color:#7e22ce;">${gradeBadge}</div>
+        </div>
       </div>
 
       <div class="gap-item">
         <b>① 요강 속 핵심 평가 키워드 일치 현황:</b><br>
-        ${matchedKws.length > 0 ? matchedKws.map(k => `<span class="pill checked">✔ ${k}</span>`).join("") : "<span style='font-size:0.8rem; color:var(--red)'>일치 키워드 부족</span>"}
+        ${matchedKws.length > 0 ? matchedKws.map(k => `<span class="pill checked">✔ ${k}</span>`).join("") : "<span style='font-size:0.8rem; color:var(--red)'>일치 키워드 전무</span>"}
       </div>
 
       <div class="gap-item">
