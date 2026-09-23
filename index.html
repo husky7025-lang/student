@@ -124,7 +124,7 @@
 
   /* 레이더 차트 및 듀얼 비교 영역 */
   .chart-section { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 14px; align-items: center; }
-  .canvas-box { display: flex; justify-content: center; align-items: center; padding: 10px; background: #f8fafc; border-radius: 10px; border: 1px solid var(--line); min-height: 340px; }
+  .canvas-box { display: flex; justify-content: center; align-items: center; padding: 10px; background: #f8fafc; border-radius: 10px; border: 1px solid var(--line); min-height: 320px; }
   .chart-explain { font-size: 0.85rem; color: var(--slate); line-height: 1.6; }
   .chart-explain li { margin-bottom: 8px; }
 
@@ -174,6 +174,18 @@
   .badge.career { background: #ccfbf1; color: var(--career); }
   .badge.growth { background: #ede9fe; color: var(--growth); }
   .badge.community { background: #ffe4e6; color: var(--community); }
+  .badge.grade { background: #f1f5f9; color: var(--navy); border: 1px solid var(--line); }
+
+  /* 학년별 탭 및 개인정보 자동보호 배너 스타일 */
+  .grade-tabs { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+  .grade-tab-btn { padding: 7px 16px; border-radius: 8px; border: 1.5px solid var(--line); background: #fff; font-size: 0.84rem; font-weight: 800; color: var(--sub); cursor: pointer; transition: 0.2s; font-family: inherit; }
+  .grade-tab-btn:hover { border-color: var(--academic); color: var(--navy); background: #f8fafc; }
+  .grade-tab-btn.active { background: var(--navy); color: #fff; border-color: var(--navy); box-shadow: 0 2px 4px rgba(15,23,42,0.15); }
+  
+  .privacy-banner { display: none; margin-top: 12px; padding: 12px 18px; background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 10px; font-size: 0.86rem; color: #166534; line-height: 1.5; }
+  .privacy-banner .banner-top { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+  .privacy-banner .meta-tags { margin-top: 6px; display: flex; gap: 6px; flex-wrap: wrap; }
+  .privacy-banner .meta-pill { font-size: 0.76rem; background: #dcfce7; color: #15803d; padding: 2px 9px; border-radius: 99px; font-weight: 800; border: 1px solid #bbf7d0; }
   
   @media print {
     body { background: #fff; padding: 0; }
@@ -228,7 +240,7 @@
       </div>
       <input type="file" id="studentFile" accept=".pdf" style="display:none" onchange="handleStudentPdf(this.files[0])">
 
-      <!-- 자동 파싱 요강 드롭존 -->
+      <!-- [제미나이 기능 반영] 자동 파싱 요강 드롭존 -->
       <div class="drop-box optional" id="guideDrop" onclick="document.getElementById('guideFile').click()">
         <span class="badge-req opt">자동 파싱 (신규 요강)</span>
         <div class="icon">🏛</div>
@@ -242,6 +254,15 @@
     <div class="progress-wrap" id="progressWrap">
       <div class="progress-bar"><i id="progressBar"></i></div>
       <div class="progress-text" id="progressText">PDF 텍스트 추출 중... (0%)</div>
+    </div>
+
+    <!-- 개인정보 자동 마스킹 완료 알림 배너 -->
+    <div class="privacy-banner" id="privacyBanner">
+      <div class="banner-top">
+        <span>🔒 <b>100% 로컬 브라우저 개인정보 자동 마스킹 완료</b>: 학생 성명, 학교명, 주민번호, 교사명 등이 안전하게 가림 처리되었습니다.</span>
+        <span class="meta-pill" style="background:#16a34a; color:#fff;" id="privacyStatusTag">안전 보호 모드</span>
+      </div>
+      <div class="meta-tags" id="privacyMetaTags"></div>
     </div>
 
     <!-- 텍스트 직접 입력창 -->
@@ -291,8 +312,18 @@
 
     <!-- 2. 나이스(NEIS) 공식 글자수 및 바이트(Byte) 충실도 점검 -->
     <div class="panel">
-      <h2 style="font-size:1.18rem; color:var(--navy); margin-bottom:4px;">📏 나이스(NEIS) 항목별 글자수 & 바이트(Byte) 충실도 점검</h2>
-      <p style="font-size:0.85rem; color:var(--sub); margin-bottom:14px;">나이스 공식 기준(한글 3바이트, 공백/영문 1바이트, 줄바꿈 2바이트)으로 입력 분량의 충실도를 정밀 산출합니다.</p>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; flex-wrap:wrap; gap:8px;">
+        <h2 style="font-size:1.18rem; color:var(--navy);">📏 나이스(NEIS) 항목별 글자수 & 바이트(Byte) 충실도 점검</h2>
+        <span style="font-size:0.8rem; color:var(--sub);">※ 한글 3B, 줄바꿈 2B, 영문/공백 1B</span>
+      </div>
+      <p style="font-size:0.85rem; color:var(--sub); margin-bottom:12px;">나이스 공식 기준에 따라 학년별·항목별 입력 분량의 충실도와 용량 한도를 정밀 점검합니다.</p>
+      
+      <div class="grade-tabs" id="neisGradeTabs">
+        <button class="grade-tab-btn active" id="tabNeisAll" onclick="switchNeisGrade('all')">전체 누적 요약</button>
+        <button class="grade-tab-btn" id="tabNeis1" onclick="switchNeisGrade('1')">1학년</button>
+        <button class="grade-tab-btn" id="tabNeis2" onclick="switchNeisGrade('2')">2학년</button>
+        <button class="grade-tab-btn" id="tabNeis3" onclick="switchNeisGrade('3')">3학년</button>
+      </div>
       <div class="neis-grid" id="neisGrid"></div>
     </div>
 
@@ -387,8 +418,18 @@
 
     <!-- 6. 과목별 세특 상세 분석 아코디언 -->
     <div class="panel">
-      <h2 style="font-size:1.15rem; color:var(--navy); margin-bottom:4px;">📚 교과목별 세부능력 및 특기사항(세특) 분리 진단</h2>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; flex-wrap:wrap; gap:8px;">
+        <h2 style="font-size:1.15rem; color:var(--navy);">📚 교과목별 세부능력 및 특기사항(세특) 분리 진단</h2>
+        <span id="subjCountBadge" style="font-size:0.8rem; background:#eff6ff; color:var(--academic); padding:3px 10px; border-radius:99px; font-weight:800; border:1px solid #bfdbfe;">과목 탐지 대기 중</span>
+      </div>
       <p style="font-size:0.85rem; color:var(--sub); margin-bottom:12px;">입력된 학생부에서 각 교과목 세특을 자동 분리하여 과목별 글자수와 발견된 핵심 역량을 표시합니다.</p>
+      
+      <div class="grade-tabs" id="subjGradeTabs">
+        <button class="grade-tab-btn active" id="tabSubjAll" onclick="switchSubjGrade('all')">전체 과목 보기</button>
+        <button class="grade-tab-btn" id="tabSubj1" onclick="switchSubjGrade('1')">1학년 과목</button>
+        <button class="grade-tab-btn" id="tabSubj2" onclick="switchSubjGrade('2')">2학년 과목</button>
+        <button class="grade-tab-btn" id="tabSubj3" onclick="switchSubjGrade('3')">3학년 과목</button>
+      </div>
       <div class="subj-accordion" id="subjAccordion"></div>
     </div>
 
@@ -479,7 +520,7 @@ function filterUnivList() {
     }
   });
 
-  // 목표대학 드롭다운 가나다순 정렬
+  // [사용자 요청] 목표대학 드롭다운에서 항상 이름순(가나다순) 정렬
   filteredUnivs.sort((a, b) => a.localeCompare(b, 'ko'));
 
   if (filteredUnivs.length === 0) {
@@ -514,8 +555,7 @@ function onDeptSelectChange() {
       lastAnalysisState.aPct,
       lastAnalysisState.cPct,
       lastAnalysisState.mPct,
-      lastAnalysisState.lvlData,
-      lastAnalysisState.gPct
+      lastAnalysisState.lvlData
     );
   }
 }
@@ -539,6 +579,7 @@ function updateDeptSelect() {
     }
   }
 
+  // 학과 목록도 가나다순(이름순) 정렬
   deptList.sort((a, b) => a.dept.localeCompare(b.dept, 'ko'));
 
   deptList.forEach(d => {
@@ -558,8 +599,7 @@ function updateDeptSelect() {
       lastAnalysisState.aPct,
       lastAnalysisState.cPct,
       lastAnalysisState.mPct,
-      lastAnalysisState.lvlData,
-      lastAnalysisState.gPct
+      lastAnalysisState.lvlData
     );
   }
 }
@@ -567,9 +607,10 @@ function updateDeptSelect() {
 window.addEventListener("DOMContentLoaded", loadUnivDatabase);
 
 // -------------------------------------------------------------
-// [요강 자동 파싱 기능]
+// [신규 통합 기능] 업로드된 요강 PDF 텍스트에서 대학 DB 자동 추출 및 메모리 등록
 // -------------------------------------------------------------
 function parseGuidePdfText(pdfText, fileName) {
+  // 1. 대학 이름 자동 감지 (파일명 또는 본문 내 '대학교' 키워드 앞 단어)
   let univName = fileName.replace(/\.[^/.]+$/, "").replace(/[^가-힣a-zA-Z]/g, "");
   if (!univName || univName.length < 2) univName = "신규 파싱 대학";
 
@@ -586,11 +627,13 @@ function parseGuidePdfText(pdfText, fileName) {
     }
   }
 
+  // 2. 권장 과목 자동 감지 (정규화 호환)
   const normPdf = normalizeSubject(pdfText);
   const detectedCore = COMMON_CORE_SUBJECTS.filter(s => {
     return pdfText.includes(s) || normPdf.includes(normalizeSubject(s));
   });
 
+  // 3. 인재상 및 키워드 추출 (불용어 제거 및 빈도 분석)
   const rawWords = pdfText.match(/[가-힣]{2,6}/g) || [];
   const stopWords = new Set(["모집", "전형", "안내", "가이드", "대학", "학과", "학생", "전체", "해당", "경우", "이수", "과목", "평가", "기준", "사항", "등록", "선발", "수시", "정시", "입학", "요강", "제출", "서류", "확인"]);
   const wordFreq = {};
@@ -599,6 +642,7 @@ function parseGuidePdfText(pdfText, fileName) {
   });
   const topKeywords = Object.entries(wordFreq).sort((a, b) => b[1] - a[1]).slice(0, 8).map(e => e[0]);
 
+  // 4. DB 자동 등록 (메모리 반영 및 드롭다운 갱신)
   if (!UNIV_DATABASE[univName]) {
     UNIV_DATABASE[univName] = {
       evalRatio: { academic: 35, career: 45, community: 20 },
@@ -615,6 +659,7 @@ function parseGuidePdfText(pdfText, fileName) {
     guide: `업로드된 [${fileName}] 문서에서 자동 파싱된 기준입니다. 추출된 핵심 권장과목(${detectedCore.slice(0, 4).join(', ') || '기초수학'}) 및 인재상 어휘를 바탕으로 맞춤 적합도를 진단합니다.`
   };
 
+  // 계열 필터를 '전체 계열'로 전환 후 대학 자동 선택
   document.getElementById("categorySelect").value = "전체 계열";
   filterUnivList();
   document.getElementById("univSelect").value = univName;
@@ -644,6 +689,91 @@ function setupDropBox(boxId, fileInputId, handleFn) {
 setupDropBox("studentDrop", "studentFile", handleStudentPdf);
 setupDropBox("guideDrop", "guideFile", handleGuidePdf);
 
+// -------------------------------------------------------------
+// [로컬 보안 엔진] 개인정보 자동 감지 & 마스킹 및 페이지 노이즈 필터링
+// -------------------------------------------------------------
+let lastDetectedMeta = null;
+
+function anonymizeAndDenoiseNeisText(text) {
+  if (!text) return { cleanText: "", studentName: "학생", schoolName: "고등학교", careerHope: "", teachers: [] };
+
+  // 1. 학생 성명 감지 (인적사항 또는 페이지 하단 푸터)
+  let studentName = "";
+  const sMatch1 = text.match(/성\s*명\s*[:\s]+([가-힣]{2,4})/);
+  const sMatch2 = text.match(/\/\d+[가-힣]+고등학교[^\n]+성명\s+([가-힣]{2,4})/);
+  if (sMatch1 && !["해당", "학생", "학과", "구분"].includes(sMatch1[1])) {
+    studentName = sMatch1[1].trim();
+  } else if (sMatch2 && sMatch2[1] !== "해당") {
+    studentName = sMatch2[1].trim();
+  }
+
+  // 2. 고등학교명 감지
+  let schoolName = "";
+  const scMatch = text.match(/([가-힣]{2,10}(?:고등학교|여자고등학교|마이스터고))/);
+  if (scMatch) schoolName = scMatch[1].trim();
+
+  // 3. 담임교사 성명 감지 (구분 표의 학년 학과 반 번호 담임성명)
+  const teachers = [];
+  const tMatches = text.matchAll(/[1-3]\s+\d+\s+\d+\s+([가-힣]{2,4})/g);
+  for (const m of tMatches) {
+    if (!["학년", "학과", "번호", "성명", "구분", "특기"].includes(m[1])) {
+      teachers.push(m[1].trim());
+    }
+  }
+
+  // 4. 진로활동 희망분야 추출
+  let careerHope = "";
+  const hopeMatch = text.match(/희망분야\s*[:\s]*([가-힣\s,·ㆍ\/]+?)(?=\n|다양한|자신의|학업|진로|체험|탐색|$)/);
+  if (hopeMatch && hopeMatch[1].trim().length >= 2) {
+    careerHope = hopeMatch[1].trim().replace(/[\r\n]+/g, ' ');
+  }
+
+  let clean = text;
+
+  // 5. 개인정보 마스킹 치환
+  // 1) 주민등록번호
+  clean = clean.replace(/\b\d{6}[-\s]?\d{7}\b/g, '******-*******');
+  // 2) 전화번호
+  clean = clean.replace(/\b010[-\s]?\d{3,4}[-\s]?\d{4}\b/g, '010-****-****');
+  // 3) 주소
+  clean = clean.replace(/(주\s*소\s*:\s*)[^\n]+/g, '$1[주소 비공개 마스킹]');
+  // 4) 중학교명
+  clean = clean.replace(/([가-힣]{2,10}중학교)/g, '[○○중학교]');
+  // 5) 고등학교명
+  if (schoolName) {
+    const escSchool = schoolName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    clean = clean.replace(new RegExp(escSchool, 'g'), '[○○고등학교]');
+  }
+  // 6) 학생 성명 마스킹
+  if (studentName && studentName.length >= 2) {
+    const escName = studentName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    clean = clean.replace(new RegExp(escName, 'g'), '[학생성명]');
+  }
+  // 7) 교사명 마스킹
+  teachers.forEach(tName => {
+    if (tName.length >= 2) {
+      const escT = tName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      clean = clean.replace(new RegExp(escT, 'g'), '[교사성명]');
+    }
+  });
+
+  // 6. 나이스 인쇄 머리말 / 꼬리말 / 워터마크 노이즈 제거
+  // 상단 헤더: [○○고등학교]/2026.08.21 14:09/10.223.***.138/...
+  clean = clean.replace(/(?:\[?○○고등학교\]?|[가-힣]+고등학교)\/\d{4}\.\d{2}\.\d{2}[^\n]*/g, '');
+  // 하단 푸터: /1[○○고등학교] 2026년 8월 21일 ...
+  clean = clean.replace(/\/\d+(?:\[?○○고등학교\]?|[가-힣]+고등학교)[^\n]*/g, '');
+  // IP 주소
+  clean = clean.replace(/\b\d{1,3}\.\d{1,3}\.\*{3}\.\d{1,3}\b/g, '');
+
+  return {
+    cleanText: clean.trim(),
+    studentName: studentName || "학생",
+    schoolName: schoolName || "고등학교",
+    careerHope: careerHope,
+    teachers: teachers
+  };
+}
+
 async function extractTextFromPdf(file, statusTextId, callback) {
   const pWrap = document.getElementById("progressWrap");
   const pBar = document.getElementById("progressBar");
@@ -663,11 +793,26 @@ async function extractTextFromPdf(file, statusTextId, callback) {
       const page = await pdf.getPage(i);
       const content = await page.getTextContent();
       
-      let lastY, pageText = "";
-      for (const item of content.items) {
-        if (lastY !== undefined && Math.abs(item.transform[5] - lastY) > 5) pageText += "\n";
+      // 표(Table) 셀 순서 정밀 보정을 위한 2차원 좌표(Y 내림차순, X 오름차순) 정렬
+      const items = content.items.slice();
+      items.sort((a, b) => {
+        const yDiff = b.transform[5] - a.transform[5];
+        if (Math.abs(yDiff) > 3.5) return yDiff;
+        return a.transform[4] - b.transform[4];
+      });
+
+      let lastY, lastX, pageText = "";
+      for (const item of items) {
+        if (!item.str) continue;
+        if (lastY !== undefined && Math.abs(item.transform[5] - lastY) > 5) {
+          pageText += "\n";
+          lastX = undefined;
+        } else if (lastX !== undefined && (item.transform[4] - lastX) > 8) {
+          pageText += " ";
+        }
         pageText += item.str;
         lastY = item.transform[5];
+        lastX = item.transform[4] + (item.width || 0);
       }
       fullText += pageText + "\n\n";
 
@@ -687,10 +832,30 @@ async function extractTextFromPdf(file, statusTextId, callback) {
 }
 
 function handleStudentPdf(file) {
-  extractTextFromPdf(file, "studentStatus", txt => {
-    document.getElementById("studentText").value = txt;
+  extractTextFromPdf(file, "studentStatus", rawTxt => {
+    // 1. 개인정보 자동 마스킹 및 노이즈 필터링
+    const anonymized = anonymizeAndDenoiseNeisText(rawTxt);
+    lastDetectedMeta = anonymized;
+
+    document.getElementById("studentText").value = anonymized.cleanText;
     document.getElementById("studentStatus").style.display = "block";
-    document.getElementById("studentStatus").innerText = `✅ 생기부 추출 완료 (${file.name})`;
+    document.getElementById("studentStatus").innerText = `✅ 생기부 추출 & 자동 마스킹 완료 (${file.name})`;
+
+    // 2. 보안 배너 표시
+    const banner = document.getElementById("privacyBanner");
+    const metaContainer = document.getElementById("privacyMetaTags");
+    if (banner && metaContainer) {
+      banner.style.display = "block";
+      const sName = anonymized.studentName;
+      const maskedNameDisp = (sName && sName.length >= 2) ? (sName[0] + "*" + (sName.length > 2 ? sName.slice(-1) : "")) : "학생";
+      
+      metaContainer.innerHTML = `
+        <span class="meta-pill">👤 학생: ${maskedNameDisp} (가림 처리됨)</span>
+        <span class="meta-pill">🏛 학교: ${anonymized.schoolName} (가림 처리됨)</span>
+        ${anonymized.careerHope ? `<span class="meta-pill" style="background:#fef3c7; color:#b45309; border-color:#fde68a;">🎯 희망분야: ${anonymized.careerHope}</span>` : ''}
+        ${anonymized.teachers.length ? `<span class="meta-pill">👩‍🏫 담임교사: ${anonymized.teachers.length}명 마스킹</span>` : ''}
+      `;
+    }
   });
 }
 
@@ -699,12 +864,15 @@ function handleGuidePdf(file) {
     document.getElementById("guideText").value = txt;
     document.getElementById("guideStatus").style.display = "block";
     document.getElementById("guideStatus").innerText = `✅ 자동 파싱 완료 (${file.name})`;
+    
+    // 요강 PDF 업로드 시 자동으로 DB에 반영하는 파서 호출
     parseGuidePdfText(txt, file.name);
   });
 }
 
 // -------------------------------------------------------------
 // 나이스 공식 규격 바이트(Byte) 및 글자수 계산 함수
+// 한글 3B, 줄바꿈(\n) 2B, 공백 및 영숫자 1B
 // -------------------------------------------------------------
 function calcNeisBytes(str) {
   if (!str) return { charsWithSpace: 0, charsNoSpace: 0, bytes: 0 };
@@ -736,39 +904,154 @@ function calcNeisBytes(str) {
 }
 
 // -------------------------------------------------------------
-// 나이스 텍스트 섹션 자동 파서 (창체, 교과세특, 행특 분리)
+// 나이스 정밀 텍스트 섹션 자동 파서 (실전 NEIS 공용 규격 호환)
 // -------------------------------------------------------------
 function parseNeisSections(text) {
   const sections = {
-    autonomy: "",
-    club: "",
-    career: "",
-    subjects: {},
-    behavior: ""
+    autonomy: "",    // 자율활동 전체
+    club: "",        // 동아리활동 전체
+    career: "",      // 진로활동 전체
+    subjects: {},    // 과목별 세특 (과목명 -> 전체 내용)
+    behavior: "",    // 행동특성 전체
+
+    // 학년별 정밀 구조 (1, 2, 3학년)
+    autonomyByGrade: { "1": "", "2": "", "3": "" },
+    clubByGrade: { "1": "", "2": "", "3": "" },
+    careerByGrade: { "1": "", "2": "", "3": "" },
+    behaviorByGrade: { "1": "", "2": "", "3": "" },
+    subjectsByGrade: { "1": {}, "2": {}, "3": {} },
+    careerHope: ""
   };
 
-  const autoMatch = text.match(/(?:자\s*율\s*활\s*동)(?:[\s:：\-\]])([\s\S]*?)(?=(?:동\s*아\s*리\s*활\s*동|진\s*로\s*활\s*동|봉\s*사\s*활\s*동|교\s*과\s*학\s*습|행\s*동\s*특\s*성|$))/i);
-  if (autoMatch) sections.autonomy = autoMatch[1].trim();
+  // 희망분야 자동 추출
+  const hopeMatch = text.match(/희망분야\s*[:\s]*([가-힣\s,·ㆍ\/]+?)(?=\n|다양한|자신의|학업|진로|체험|탐색|$)/);
+  if (hopeMatch && hopeMatch[1].trim().length >= 2) {
+    sections.careerHope = hopeMatch[1].trim().replace(/[\r\n]+/g, ' ');
+  }
 
-  const clubMatch = text.match(/(?:동\s*아\s*리\s*활\s*동)(?:[\s:：\-\]])([\s\S]*?)(?=(?:진\s*로\s*활\s*동|봉\s*사\s*활\s*동|교\s*과\s*학\s*습|행\s*동\s*특\s*성|$))/i);
-  if (clubMatch) sections.club = clubMatch[1].trim();
+  // A. 정규 나이스(NEIS) 양식 감지 여부 확인
+  const isOfficialNeis = /6\.\s*창의적\s*체험활동상황|7\.\s*교과학습발달상황|9\.\s*행동특성/i.test(text);
 
-  const careerMatch = text.match(/(?:진\s*로\s*활\s*동)(?:[\s:：\-\]])([\s\S]*?)(?=(?:봉\s*사\s*활\s*동|교\s*과\s*학\s*습|세\s*부\s*능\s*력|행\s*동\s*특\s*성|$))/i);
-  if (careerMatch) sections.career = careerMatch[1].trim();
+  if (isOfficialNeis) {
+    // 1. 창의적 체험활동상황 (6번) 파싱
+    const sec6Match = text.match(/6\.\s*창의적\s*체험활동상황([\s\S]*?)(?=7\.\s*교과학습발달상황|$)/);
+    const sec6Text = sec6Match ? sec6Match[1] : "";
 
-  const behavMatch = text.match(/(?:행\s*동\s*특\s*성\s*및\s*종\s*합\s*의\s*견|행\s*특)(?:[\s:：\-\]])([\s\S]*?)$/i);
-  if (behavMatch) sections.behavior = behavMatch[1].trim();
+    if (sec6Text) {
+      for (const gr of ["1", "2", "3"]) {
+        // 학년 블록 탐색 (예: \n1\n 또는 1 자율활동...)
+        const grReg = new RegExp(`(?:^|\\n)\\s*${gr}\\s*\\n([\\s\\S]*?)(?=(?:\\n\\s*[1-3]\\s*\\n|봉\\s*사\\s*활\\s*동|$))`, 'i');
+        const grFound = sec6Text.match(grReg);
+        const grBlock = grFound ? grFound[1] : "";
 
-  const subjRegex = /(?:\[|\<|【|\()?\s*([가-힣A-Za-z0-9ⅠⅡIIVV\s·]+?)\s*(?:세\s*부\s*능\s*력|세\s*특|세부능력\s*및\s*특기사항)(?:\]|\>|】|\))?[\s:：\-\]]([\s\S]*?)(?=(?:\[|\<|【|\()?\s*[가-힣A-Za-z0-9ⅠⅡIIVV\s·]+?\s*(?:세\s*부\s*능\s*력|세\s*특|세부능력\s*및\s*특기사항)|(?:행\s*동\s*특\s*성|창\s*의\s*적|$))/gi;
-  let sMatch;
-  while ((sMatch = subjRegex.exec(text)) !== null) {
-    const sName = sMatch[1].trim().replace(/[\[\]\<\>【】\(\)]/g, '').replace(/^[0-9]+학년\s*[-_]?\s*/, '');
-    const sContent = sMatch[2].trim();
-    if (sName.length >= 2 && sContent.length > 20) {
-      sections.subjects[sName] = (sections.subjects[sName] || "") + (sections.subjects[sName] ? "\n\n" : "") + sContent;
+        // 자율활동 추출
+        const autoM = grBlock.match(/자율활동\s*(?:\d+)?\s*\n?([\s\S]*?)(?=(?:동아리활동|진로활동|$))/i);
+        if (autoM && autoM[1].trim()) {
+          const autoClean = autoM[1].replace(/^[0-9]+\s*/, '').trim();
+          sections.autonomyByGrade[gr] = autoClean;
+          sections.autonomy += (sections.autonomy ? "\n\n" : "") + `[${gr}학년 자율활동]\n` + autoClean;
+        }
+
+        // 동아리활동 추출
+        const clubM = grBlock.match(/동아리활동\s*(?:\d+)?\s*\n?([\s\S]*?)(?=(?:진로활동|$))/i);
+        if (clubM && clubM[1].trim()) {
+          const clubClean = clubM[1].replace(/^[0-9]+\s*/, '').trim();
+          sections.clubByGrade[gr] = clubClean;
+          sections.club += (sections.club ? "\n\n" : "") + `[${gr}학년 동아리활동]\n` + clubClean;
+        }
+
+        // 진로활동 추출
+        const careerM = grBlock.match(/진로활동\s*(?:\d+)?\s*\n?([\s\S]*?)$/i);
+        if (careerM && careerM[1].trim()) {
+          let careerClean = careerM[1].replace(/^[0-9]+\s*/, '').trim();
+          // 희망분야 라인 제거
+          careerClean = careerClean.replace(/희망분야[^\n]+\n?/, '').trim();
+          sections.careerByGrade[gr] = careerClean;
+          sections.career += (sections.career ? "\n\n" : "") + `[${gr}학년 진로활동]\n` + careerClean;
+        }
+      }
+    }
+
+    // 2. 교과학습발달상황 (7번) 과목별 세특 파싱
+    const sec7Match = text.match(/7\.\s*교과학습발달상황([\s\S]*?)(?=8\.\s*독서활동상황|9\.\s*행동특성|$)/);
+    const sec7Text = sec7Match ? sec7Match[1] : "";
+
+    if (sec7Text) {
+      // 학년별 분할 ([1학년], [2학년], [3학년])
+      const gradeSplits = sec7Text.split(/(?=\[[1-3]학년\])/);
+      gradeSplits.forEach(gChunk => {
+        let curGrade = "1";
+        const gHeader = gChunk.match(/\[([1-3])학년\]/);
+        if (gHeader) curGrade = gHeader[1];
+
+        // 과목명: 세특내용 정규식 (나이스 표준 형태: '국어: 내용', '(1학기)통합과학: 내용', '물리학Ⅱ: 내용')
+        const subjBlockRegex = /(?:^|\n)\s*(?:\([1-2]학기\))?\s*([가-힣A-Za-z0-9ⅠⅡIIVV\s·ㆍ+]+?)\s*:\s*([\s\S]+?)(?=(?:\n\s*(?:\([1-2]학기\))?\s*[가-힣A-Za-z0-9ⅠⅡIIVV\s·ㆍ+]+?\s*:)|(?:\n\s*\[[1-3]학년\])|(?:\n\s*<진로\s*선택\s*과목>)|(?:\n\s*<체육[ㆍ·]예술>)|(?:\n\s*이수학점)|$)/g;
+        
+        let sM;
+        while ((sM = subjBlockRegex.exec(gChunk)) !== null) {
+          const sRawName = sM[1].trim();
+          const sContent = sM[2].trim();
+
+          // 표 헤더나 메타 단어 필터링
+          const isInvalidHeader = /과\s*목|교\s*과|학점수|원점수|성취도|석차등급|비고|해당\s*사항|이수학점/.test(sRawName);
+          if (!isInvalidHeader && sRawName.length >= 2 && sContent.length > 20) {
+            const cleanSubjName = sRawName.replace(/\([1-2]학기\)/g, '').trim();
+            sections.subjects[cleanSubjName] = (sections.subjects[cleanSubjName] || "") + (sections.subjects[cleanSubjName] ? "\n\n" : "") + sContent;
+            sections.subjectsByGrade[curGrade][cleanSubjName] = sContent;
+          }
+        }
+      });
+    }
+
+    // 3. 행동특성 및 종합의견 (9번) 파싱
+    const sec9Match = text.match(/9\.\s*행동특성\s*및\s*종합의견([\s\S]*?)$/);
+    const sec9Text = sec9Match ? sec9Match[1] : "";
+
+    if (sec9Text) {
+      for (const gr of ["1", "2", "3"]) {
+        const bReg = new RegExp(`(?:^|\\n)\\s*${gr}\\s*\\n([\\s\\S]*?)(?=(?:\\n\\s*[1-3]\\s*\\n|$))`, 'i');
+        const bFound = sec9Text.match(bReg);
+        if (bFound && bFound[1].trim()) {
+          const bClean = bFound[1].trim();
+          sections.behaviorByGrade[gr] = bClean;
+          sections.behavior += (sections.behavior ? "\n\n" : "") + `[${gr}학년 행특]\n` + bClean;
+        }
+      }
     }
   }
 
+  // B. 레거시 또는 직접 붙여넣은 텍스트의 대체(Fallback) 파싱
+  if (!sections.autonomy) {
+    const autoMatch = text.match(/(?:자\s*율\s*활\s*동)(?:[\s:：\-\]])([\s\S]*?)(?=(?:동\s*아\s*리\s*활\s*동|진\s*로\s*활\s*동|봉\s*사\s*활\s*동|교\s*과\s*학\s*습|행\s*동\s*특\s*성|$))/i);
+    if (autoMatch) sections.autonomy = autoMatch[1].trim();
+  }
+  if (!sections.club) {
+    const clubMatch = text.match(/(?:동\s*아\s*리\s*활\s*동)(?:[\s:：\-\]])([\s\S]*?)(?=(?:진\s*로\s*활\s*동|봉\s*사\s*활\s*동|교\s*과\s*학\s*습|행\s*동\s*특\s*성|$))/i);
+    if (clubMatch) sections.club = clubMatch[1].trim();
+  }
+  if (!sections.career) {
+    const careerMatch = text.match(/(?:진\s*로\s*활\s*동)(?:[\s:：\-\]])([\s\S]*?)(?=(?:봉\s*사\s*활\s*동|교\s*과\s*학\s*습|세\s*부\s*능\s*력|행\s*동\s*특\s*성|$))/i);
+    if (careerMatch) sections.career = careerMatch[1].trim();
+  }
+  if (!sections.behavior) {
+    const behavMatch = text.match(/(?:행\s*동\s*특\s*성\s*및\s*종\s*합\s*의\s*견|행\s*특)(?:[\s:：\-\]])([\s\S]*?)$/i);
+    if (behavMatch) sections.behavior = behavMatch[1].trim();
+  }
+
+  // 과목이 아직 비어있다면 [과목명 세특] 형태 추출
+  if (Object.keys(sections.subjects).length === 0) {
+    const subjRegex = /(?:\[|\<|【|\()?\s*([가-힣A-Za-z0-9ⅠⅡIIVV\s·]+?)\s*(?:세\s*부\s*능\s*력|세\s*특|세부능력\s*및\s*특기사항)(?:\]|\>|】|\))?[\s:：\-\]]([\s\S]*?)(?=(?:\[|\<|【|\()?\s*[가-힣A-Za-z0-9ⅠⅡIIVV\s·]+?\s*(?:세\s*부\s*능\s*력|세\s*특|세부능력\s*및\s*특기사항)|(?:행\s*동\s*특\s*성|창\s*의\s*적|$))/gi;
+    let sMatch;
+    while ((sMatch = subjRegex.exec(text)) !== null) {
+      const sName = sMatch[1].trim().replace(/[\[\]\<\>【】\(\)]/g, '').replace(/^[0-9]+학년\s*[-_]?\s*/, '');
+      const sContent = sMatch[2].trim();
+      if (sName.length >= 2 && sContent.length > 20) {
+        sections.subjects[sName] = (sections.subjects[sName] || "") + (sections.subjects[sName] ? "\n\n" : "") + sContent;
+      }
+    }
+  }
+
+  // 최종 점검: 핵심 과목 목록 기반 탐색
   if (Object.keys(sections.subjects).length === 0) {
     const coreList = ["국어", "문학", "독서", "수학", "수학Ⅰ", "수학Ⅱ", "미적분", "확률과 통계", "기하", "영어", "물리학Ⅰ", "물리학Ⅱ", "화학Ⅰ", "화학Ⅱ", "생명과학Ⅰ", "생명과학Ⅱ", "지구과학Ⅰ", "지구과학Ⅱ", "통합과학", "통합사회", "한국사", "사회·문화", "생활과 윤리", "경제", "정치와 법", "정보", "인공지능 수학"];
     coreList.forEach(cName => {
@@ -785,7 +1068,7 @@ function parseNeisSections(text) {
 }
 
 // -------------------------------------------------------------
-// [2026 교육부 기재요령 위반 & 리스크 스크리닝 패턴]
+// [2026 교육부 기재요령 위반 & 리스크 스크리닝]
 // -------------------------------------------------------------
 const PROHIBITED_PATTERNS = [
   { word: "토익", type: "공인어학성적 기재 금지", reason: "TOEIC 등 공인어학시험 성적·취득 사실은 기재 불가 (불합격/0점 처리 요인)" },
@@ -944,7 +1227,7 @@ function renderAuditReport(auditData) {
 // -------------------------------------------------------------
 function analyzeInquiryLevels(text) {
   const sentences = text.split(/[.!?\n]/).map(s => s.trim()).filter(s => s.length > 8);
-  if (sentences.length === 0) return { counts: [0,0,0,0], pcts: [25,25,25,25], avgLevel: 2.0, totalSentences: 0, l3: 0, l4: 0 };
+  if (sentences.length === 0) return { counts: [0,0,0,0], pcts: [25,25,25,25], avgLevel: 2.0, totalSentences: 0 };
 
   const l4Patterns = ["융합하여", "연계하여", "한계를 극복", "대안을 제시", "프로토타입을 제작", "후속 탐구", "독창적", "수식 모델링", "새로운 시각"];
   const l3Patterns = ["수식을 유도", "원리를 증명", "가설을 설정", "실험을 설계", "오차를 분석", "수치적으로 도출", "비판적으로 고찰", "메커니즘을 규명"];
@@ -973,9 +1256,7 @@ function analyzeInquiryLevels(text) {
     counts: [c1, c2, c3, c4],
     pcts: [p1, p2, p3, p4],
     avgLevel: avgScore,
-    totalSentences: total,
-    l3: c3,
-    l4: c4
+    totalSentences: total
   };
 }
 
@@ -1167,13 +1448,398 @@ function normalizeSubject(s) {
 }
 
 // -------------------------------------------------------------
-// [4차원 다면 평가 추천 엔진 메인 함수]
+// 메인 분석 함수
 // -------------------------------------------------------------
+function runAnalysis() {
+  let studentTxt = document.getElementById("studentText").value.trim();
+  const guideTxt = document.getElementById("guideText").value.trim();
+
+  if (!studentTxt) { alert("분석할 생활기록부 텍스트를 입력하거나 PDF를 올려주세요."); return; }
+
+  // 직접 붙여넣거나 로드된 텍스트에 대한 자동 개인정보 마스킹 및 노이즈 필터링
+  const anonymized = anonymizeAndDenoiseNeisText(studentTxt);
+  if (anonymized.cleanText && anonymized.cleanText !== studentTxt) {
+    studentTxt = anonymized.cleanText;
+    document.getElementById("studentText").value = studentTxt;
+  }
+  if (!lastDetectedMeta) {
+    lastDetectedMeta = anonymized;
+  }
+  const banner = document.getElementById("privacyBanner");
+  const metaContainer = document.getElementById("privacyMetaTags");
+  if (banner && metaContainer && (lastDetectedMeta.studentName !== "학생" || lastDetectedMeta.schoolName !== "고등학교" || lastDetectedMeta.careerHope)) {
+    banner.style.display = "block";
+    const sName = lastDetectedMeta.studentName;
+    const maskedNameDisp = (sName && sName.length >= 2) ? (sName[0] + "*" + (sName.length > 2 ? sName.slice(-1) : "")) : "학생";
+    metaContainer.innerHTML = `
+      <span class="meta-pill">👤 학생: ${maskedNameDisp} (가림 처리됨)</span>
+      <span class="meta-pill">🏛 학교: ${lastDetectedMeta.schoolName} (가림 처리됨)</span>
+      ${lastDetectedMeta.careerHope ? `<span class="meta-pill" style="background:#fef3c7; color:#b45309; border-color:#fde68a;">🎯 희망분야: ${lastDetectedMeta.careerHope}</span>` : ''}
+      ${lastDetectedMeta.teachers.length ? `<span class="meta-pill">👩‍🏫 담임교사: ${lastDetectedMeta.teachers.length}명 마스킹</span>` : ''}
+    `;
+  }
+
+  // 1. 나이스 섹션 분리 및 바이트/글자수 계산
+  const sections = parseNeisSections(studentTxt);
+  currentNeisSections = sections;
+  renderNeisCardGrid(sections, "all");
+
+  // 2. 4단계 탐구 질적 수준 분석
+  const lvlData = analyzeInquiryLevels(studentTxt);
+  renderInquiryLevels(lvlData);
+
+  // 3. 역량 점수 계산 (로그 감쇠 적용 - 4대 역량 체계)
+  const weightedScores = { academic: 0, career: 0, growth: 0, community: 0 };
+  const matchedWords = { academic: [], career: [], growth: [], community: [] };
+
+  for (const cat of ["academic", "career", "growth", "community"]) {
+    WEIGHTED_DICT[cat].forEach(item => {
+      const reg = new RegExp(item.word, 'g');
+      const matches = studentTxt.match(reg);
+      if (matches) {
+        const count = matches.length;
+        const effectiveCount = 1 + Math.log2(count);
+        const score = Math.round(effectiveCount * item.weight * 10) / 10;
+        weightedScores[cat] += score;
+        matchedWords[cat].push({ word: item.word, count, weight: item.weight, score });
+      }
+    });
+    matchedWords[cat].sort((a, b) => b.score - a.score);
+  }
+
+  const totalWeighted = weightedScores.academic + weightedScores.career + weightedScores.growth + weightedScores.community;
+  const aPct = totalWeighted ? Math.round((weightedScores.academic / totalWeighted) * 100) : 25;
+  const cPct = totalWeighted ? Math.round((weightedScores.career / totalWeighted) * 100) : 25;
+  const gPct = totalWeighted ? Math.round((weightedScores.growth / totalWeighted) * 100) : 25;
+  const mPct = totalWeighted ? Math.max(0, 100 - (aPct + cPct + gPct)) : 25;
+
+  document.getElementById("barAcademic").style.width = aPct + "%";
+  document.getElementById("barAcademic").innerText = `학업 ${aPct}%`;
+  document.getElementById("barCareer").style.width = cPct + "%";
+  document.getElementById("barCareer").innerText = `진로 ${cPct}%`;
+  document.getElementById("barGrowth").style.width = gPct + "%";
+  document.getElementById("barGrowth").innerText = `성장 ${gPct}%`;
+  document.getElementById("barCommunity").style.width = mPct + "%";
+  document.getElementById("barCommunity").innerText = `공동체 ${mPct}%`;
+
+  document.getElementById("rateAcademic").innerText = aPct + "%";
+  document.getElementById("rateCareer").innerText = cPct + "%";
+  document.getElementById("rateGrowth").innerText = gPct + "%";
+  document.getElementById("rateCommunity").innerText = mPct + "%";
+
+  document.getElementById("cntAcademic").innerText = `가중 스코어: ${Math.round(weightedScores.academic)}점`;
+  document.getElementById("cntCareer").innerText = `가중 스코어: ${Math.round(weightedScores.career)}점`;
+  document.getElementById("cntGrowth").innerText = `가중 스코어: ${Math.round(weightedScores.growth)}점`;
+  document.getElementById("cntCommunity").innerText = `가중 스코어: ${Math.round(weightedScores.community)}점`;
+
+  const renderBadges = (elId, list, cls) => {
+    document.getElementById(elId).innerHTML = list.slice(0, 5).map(i => `<span class="badge ${cls}">${i.word} (x${i.count})</span>`).join("");
+  };
+  renderBadges("badgesAcademic", matchedWords.academic, "academic");
+  renderBadges("badgesCareer", matchedWords.career, "career");
+  renderBadges("badgesGrowth", matchedWords.growth, "growth");
+  renderBadges("badgesCommunity", matchedWords.community, "community");
+
+  // 4. 순수 Canvas 8각 역량 레이더 차트 그리기 (정규화 및 균형 캘리브레이션)
+  const rawBooks = [...new Set([...studentTxt.matchAll(/[『「<]([^』」>]+)[』」>]/g)].map(m => m[1]))];
+  const invalidBookNames = new Set(["자격증 및 인증 취득상황", "자격증및인증취득상황", "국가직무능력표준 이수상황", "국가직무능력표준이수상황", "독서활동상황"]);
+  const validBooks = rawBooks.filter(b => !invalidBookNames.has(b.trim()));
+
+  // 1) 기초학업력: 기본 베이스(38점) + 교과 학업 가중치
+  const scoreAcademic = Math.min(95, Math.max(50, Math.round(weightedScores.academic * 1.3) + 38));
+
+  // 2) 심화탐구력: 기본 베이스(52점) + 탐구레벨(1~4단계) 기여분 + 심화탐구(L3/L4) 비중 보너스
+  const inquiryBase = (lvlData.avgLevel - 1.0) * 22;
+  const inquiryAdvBonus = Math.min(18, Math.round((lvlData.l3 + lvlData.l4) * 1.8));
+  const scoreInquiry = Math.min(96, Math.max(50, Math.round(52 + inquiryBase + inquiryAdvBonus)));
+
+  // 3) 전공교과이수: 과목 수 점진 가산 + 심화/위계 선택과목 이수 여부
+  const subjCount = Object.keys(sections.subjects).length;
+  const hasAdvSubj = /미적분|기하|물리학Ⅱ|화학Ⅱ|생명과학Ⅱ|지구과학Ⅱ|경제|정치와법|사회문화|세계사|인공지능|심화수학|고급/.test(studentTxt);
+  const scoreSubjects = Math.min(95, Math.max(50, 52 + Math.min(24, subjCount * 4) + (hasAdvSubj ? 14 : 4)));
+
+  // 4) 전공지향성: 진로 탐구 가중치 + 전문 독서 활동 반영
+  const scoreCareer = Math.min(95, Math.max(50, Math.round(weightedScores.career * 1.3) + Math.min(16, validBooks.length * 5) + 32));
+
+  // 5) 자기주도성: 성장 역량 가중치 + 자발적/주도적 문제의식 키워드
+  const hasSelfDriven = /스스로|자발적|주도적|호기심을 바탕으로|의문을 품고/.test(studentTxt);
+  const scoreSelfDrive = Math.min(95, Math.max(50, Math.round(weightedScores.growth * 1.3) + (hasSelfDriven ? 12 : 5) + 36));
+
+  // 6) 발전잠재력: 기본 베이스(50점) + 성장역량 가중치 + 심화탐구 전환(L3/L4) + 한계극복/피드백 서사
+  const hasOvercoming = /극복|보완|피드백|성찰|한계|성장|발전|개선/.test(studentTxt);
+  const potentialL3Bonus = Math.min(16, Math.round((lvlData.l3 + lvlData.l4) * 1.4));
+  const scorePotential = Math.min(95, Math.max(50, 50 + Math.round(weightedScores.growth * 1.0) + potentialL3Bonus + (hasOvercoming ? 10 : 3)));
+
+  // 7) 협업·소통: 공동체 역량 가중치
+  const scoreCommunity = Math.min(95, Math.max(50, Math.round(weightedScores.community * 1.3) + 38));
+
+  // 8) 리더십·인성: 공동체 기여도 + 리더십 역할(반장/팀장 등) + 갈등 중재/협조 역량 다면 평가
+  const hasLeadership = /리더|반장|부반장|팀장|부장|솔선수범|이끌/.test(studentTxt);
+  const hasMediation = /갈등|조율|배려|경청|화합|중재|협조/.test(studentTxt);
+  const scoreLeadership = Math.min(95, Math.max(50, 48 + Math.round(weightedScores.community * 0.7) + (hasLeadership ? 12 : 4) + (hasMediation ? 12 : 4)));
+
+  const radarScores = [
+    scoreAcademic,
+    scoreInquiry,
+    scoreSubjects,
+    scoreCareer,
+    scoreSelfDrive,
+    scorePotential,
+    scoreCommunity,
+    scoreLeadership
+  ];
+  drawRadarChart(radarScores);
+
+  // 5. 생기부 기반 AI 최적 전공 분야 자동 추천 (TOP 3)
+  const topMajors = recommendTopMajors(studentTxt, sections, aPct, cPct, mPct, lvlData);
+  renderMajorRecommendations(topMajors);
+
+  // 6. 목표 대학 맞춤 적합도 GAP 분석 (엄격 채점 인자 전달)
+  if (guideTxt) {
+    renderDynamicGuideMatching(studentTxt, guideTxt, aPct, cPct, mPct, lvlData);
+  } else {
+    renderPresetGuideMatching(studentTxt, aPct, cPct, mPct, lvlData);
+  }
+
+  // 7. 2026 기재금지어 & AI/과장 리스크 스크리닝
+  const auditData = performStudentAudit(studentTxt);
+  renderAuditReport(auditData);
+
+  // 8. 교과목별 세특 아코디언 렌더링
+  currentSubjData = { subjects: sections.subjects, subjectsByGrade: sections.subjectsByGrade };
+  renderSubjectAccordion(sections.subjects, sections.subjectsByGrade, "all");
+
+  // 9. 향후 생기부 작성/보완 가이드
+  renderActionPlanGuide(studentTxt, aPct, cPct, mPct, validBooks, gPct);
+
+  // 10. 강약점 심층 리포트
+  renderStrengthsAndWeaknesses(studentTxt, aPct, cPct, mPct, validBooks, gPct);
+
+  // 현재 분석 상태 저장 (계열/대학/학과 변경 시 실시간 반영용)
+  lastAnalysisState = {
+    studentTxt,
+    guideTxt,
+    sections,
+    lvlData,
+    aPct,
+    cPct,
+    gPct,
+    mPct,
+    validBooks
+  };
+
+  document.getElementById("resultSection").style.display = "block";
+}
+
+// -------------------------------------------------------------
+// 나이스 항목별 바이트 & 글자수 카드 렌더링 (학년별 탭 전환 지원)
+// -------------------------------------------------------------
+let currentNeisSections = null;
+let currentNeisGrade = "all";
+
+function switchNeisGrade(grade) {
+  currentNeisGrade = grade;
+  ["all", "1", "2", "3"].forEach(g => {
+    const btn = document.getElementById("tabNeis" + (g === "all" ? "All" : g));
+    if (btn) btn.classList.toggle("active", g === grade);
+  });
+  if (currentNeisSections) {
+    renderNeisCardGrid(currentNeisSections, grade);
+  }
+}
+
+function renderNeisCardGrid(sec, grade = "all") {
+  const container = document.getElementById("neisGrid");
+  container.innerHTML = "";
+
+  let autoTxt = "", clubTxt = "", careerTxt = "", behTxt = "";
+  let maxAutoChars = 500, maxAutoBytes = 1500;
+  let maxClubChars = 500, maxClubBytes = 1500;
+  let maxCareerChars = 700, maxCareerBytes = 2100;
+  let maxBehChars = 500, maxBehBytes = 1500;
+
+  if (grade === "all") {
+    autoTxt = sec.autonomy || "";
+    clubTxt = sec.club || "";
+    careerTxt = sec.career || "";
+    behTxt = sec.behavior || "";
+
+    const hasG1 = sec.autonomyByGrade && (sec.autonomyByGrade["1"] || sec.clubByGrade["1"]);
+    const hasG2 = sec.autonomyByGrade && (sec.autonomyByGrade["2"] || sec.clubByGrade["2"]);
+    const hasG3 = sec.autonomyByGrade && (sec.autonomyByGrade["3"] || sec.clubByGrade["3"]);
+    const gradeCount = (hasG1 ? 1 : 0) + (hasG2 ? 1 : 0) + (hasG3 ? 1 : 0) || 1;
+
+    maxAutoChars = 500 * gradeCount;
+    maxAutoBytes = 1500 * gradeCount;
+    maxClubChars = 500 * gradeCount;
+    maxClubBytes = 1500 * gradeCount;
+    maxCareerChars = 700 * gradeCount;
+    maxCareerBytes = 2100 * gradeCount;
+    maxBehChars = 500 * Math.max(1, gradeCount - (hasG3 && !sec.behaviorByGrade["3"] ? 1 : 0));
+    maxBehBytes = 1500 * Math.max(1, gradeCount - (hasG3 && !sec.behaviorByGrade["3"] ? 1 : 0));
+  } else {
+    autoTxt = (sec.autonomyByGrade && sec.autonomyByGrade[grade]) || "";
+    clubTxt = (sec.clubByGrade && sec.clubByGrade[grade]) || "";
+    careerTxt = (sec.careerByGrade && sec.careerByGrade[grade]) || "";
+    behTxt = (sec.behaviorByGrade && sec.behaviorByGrade[grade]) || "";
+  }
+
+  const secConfigs = [
+    { name: (grade === "all" ? "자율활동 (전체)" : `${grade}학년 자율활동`), text: autoTxt, maxChars: maxAutoChars, maxBytes: maxAutoBytes },
+    { name: (grade === "all" ? "동아리활동 (전체)" : `${grade}학년 동아리활동`), text: clubTxt, maxChars: maxClubChars, maxBytes: maxClubBytes },
+    { name: (grade === "all" ? "진로활동 (전체)" : `${grade}학년 진로활동`), text: careerTxt, maxChars: maxCareerChars, maxBytes: maxCareerBytes },
+    { name: (grade === "all" ? "행동특성및종합의견" : `${grade}학년 행동특성`), text: behTxt, maxChars: maxBehChars, maxBytes: maxBehBytes }
+  ];
+
+  secConfigs.forEach(cfg => {
+    const calc = calcNeisBytes(cfg.text);
+    const bytePct = Math.min(100, Math.round((calc.bytes / cfg.maxBytes) * 100));
+    
+    let barColor = "#2563eb";
+    let statusLabel = "적정 분량";
+    if (calc.bytes === 0) {
+      barColor = "#cbd5e1";
+      statusLabel = "미탐지 / 미기재";
+    } else if (bytePct < 60) {
+      barColor = "#f59e0b";
+      statusLabel = "분량 보완 필요";
+    } else if (bytePct > 100) {
+      barColor = "#dc2626";
+      statusLabel = "용량 초과 주의";
+    }
+
+    container.innerHTML += `
+      <div class="neis-card">
+        <h4>${cfg.name} <span style="font-size:0.75rem; color:${barColor}; font-weight:800;">${statusLabel}</span></h4>
+        <div class="neis-bar-bg">
+          <div class="neis-bar-fill" style="width: ${bytePct}%; background: ${barColor};"></div>
+        </div>
+        <div class="neis-info">
+          <span>${calc.charsWithSpace}자 / ${cfg.maxChars}자</span>
+          <b>${calc.bytes} Byte (${bytePct}%)</b>
+        </div>
+      </div>
+    `;
+  });
+}
+
+// -------------------------------------------------------------
+// 교과목별 세특 아코디언 카드 렌더링 (학년별 탭 지원)
+// -------------------------------------------------------------
+let currentSubjData = null;
+let currentSubjGrade = "all";
+
+function switchSubjGrade(grade) {
+  currentSubjGrade = grade;
+  ["all", "1", "2", "3"].forEach(g => {
+    const btn = document.getElementById("tabSubj" + (g === "all" ? "All" : g));
+    if (btn) btn.classList.toggle("active", g === grade);
+  });
+  if (currentSubjData) {
+    renderSubjectAccordion(currentSubjData.subjects, currentSubjData.subjectsByGrade, grade);
+  }
+}
+
+function renderSubjectAccordion(subjects, subjectsByGrade, grade = "all") {
+  const container = document.getElementById("subjAccordion");
+  container.innerHTML = "";
+
+  const displayList = [];
+
+  if (grade === "all") {
+    const keys = Object.keys(subjects || {});
+    keys.forEach(sName => {
+      let gTag = "";
+      if (subjectsByGrade) {
+        if (subjectsByGrade["1"] && subjectsByGrade["1"][sName]) gTag = "1학년";
+        else if (subjectsByGrade["2"] && subjectsByGrade["2"][sName]) gTag = "2학년";
+        else if (subjectsByGrade["3"] && subjectsByGrade["3"][sName]) gTag = "3학년";
+      }
+      displayList.push({ name: sName, text: subjects[sName], gradeTag: gTag });
+    });
+  } else {
+    if (subjectsByGrade && subjectsByGrade[grade]) {
+      const gSubjs = subjectsByGrade[grade];
+      for (const sName in gSubjs) {
+        displayList.push({ name: sName, text: gSubjs[sName], gradeTag: `${grade}학년` });
+      }
+    }
+  }
+
+  // 상단 뱃지 과목 수 업데이트
+  const badge = document.getElementById("subjCountBadge");
+  if (badge) {
+    badge.innerText = `${displayList.length}개 과목 분리 진단`;
+  }
+
+  if (displayList.length === 0) {
+    container.innerHTML = `
+      <div style="font-size:0.86rem; color:var(--sub); padding:16px; background:#f8fafc; border-radius:8px; text-align:center;">
+        해당 학년의 과목별 세특이 감지되지 않았습니다.
+      </div>
+    `;
+    return;
+  }
+
+  displayList.forEach((item, idx) => {
+    const subj = item.name;
+    const txt = item.text;
+    const calc = calcNeisBytes(txt);
+    const hasProof = txt.includes("증명") || txt.includes("원리") || txt.includes("유도") || txt.includes("수식");
+    const hasExperiment = txt.includes("실험") || txt.includes("오차") || txt.includes("가설");
+
+    let tagHtml = "";
+    if (item.gradeTag) tagHtml += `<span class="badge grade">${item.gradeTag}</span> `;
+    if (hasProof) tagHtml += `<span class="badge academic">수식·원리 증명</span>`;
+    if (hasExperiment) tagHtml += `<span class="badge career">실험·데이터 분석</span>`;
+    if (!hasProof && !hasExperiment) tagHtml += `<span class="badge" style="background:#f1f5f9; color:var(--sub)">기초 교과 활동</span>`;
+
+    container.innerHTML += `
+      <div class="subj-item">
+        <div class="subj-header" onclick="toggleAccordion('subj_${idx}')">
+          <div>
+            <span>📖 ${subj}</span>
+            <span style="font-size:0.78rem; color:var(--sub); font-weight:normal; margin-left:8px;">
+              ${calc.charsWithSpace}자 (${calc.bytes} Byte / 1,500B)
+            </span>
+          </div>
+          <div>${tagHtml} <span style="font-size:0.8rem; margin-left:6px;">▼</span></div>
+        </div>
+        <div class="subj-body" id="subj_${idx}">
+          <p style="white-space: pre-line; line-height:1.6; margin-bottom:10px;">${txt}</p>
+          <div style="font-size:0.8rem; color:var(--academic); background:#eff6ff; padding:8px 12px; border-radius:6px;">
+            💡 <b>과목 평가 조언:</b> ${hasProof ? '수식 및 원리 유도 과정이 명시되어 사정관의 높은 학업역량 평가가 기대됩니다.' : '교과 핵심 공식이나 이론의 증명/비판적 고찰 과정을 보강하면 더욱 강력한 세특이 완성됩니다.'}
+          </div>
+        </div>
+      </div>
+    `;
+  });
+}
+
+function toggleAccordion(id) {
+  const el = document.getElementById(id);
+  if (el) {
+    el.style.display = (el.style.display === "block") ? "none" : "block";
+  }
+}
+
+// -------------------------------------------------------------
+// -------------------------------------------------------------
+// -------------------------------------------------------------
+// [AI 최적 전공 분야 4차원 입체 추천 엔진 - 사정관 다면 평가 모델]
+// 1. 필수 과목 이수 게이트키핑 (Gatekeeper)
+// 2. 학년별 시계열 가중치 (Time-Series: 1학년 1.0x, 2학년 1.8x, 3학년 2.5x)
+// 3. 영역별 차등 가중치 (Sectional: 진로 3.0x, 동아리 2.5x, 세특 1.5~2.2x, 자율 0.8x)
+// 4. TF-IDF 어휘 변별력 (Killer Keyword 5x vs 범용 노이즈 단어 감쇠)
+// -------------------------------------------------------------
+
+// 전 학과 범용 출현 노이즈 단어 (단독 출현 시 가중치 감쇠 및 과도 쏠림 방지)
 const GLOBAL_GENERIC_NOISE = new Set([
   "시스템", "제어", "분석", "데이터", "설계", "시뮬레이션", "프로젝트",
   "프로그래밍", "실험", "원리", "구조", "모델링", "연구", "개발", "활동", "탐구"
 ]);
 
+// 13개 세부 전공 도메인 정의 (사정관 게이트키퍼 및 킬러 키워드 탑재)
 const MAJOR_RECOMMEND_DOMAINS = [
   {
     name: "기계·로봇·모빌리티·항공",
@@ -1398,15 +2064,48 @@ const MAJOR_RECOMMEND_DOMAINS = [
   }
 ];
 
-// -------------------------------------------------------------
-// [2단계] 학년/영역 인식 개선 함수 (splitByGrades)
-// -------------------------------------------------------------
+// 과목명 정밀 매칭 함수 (동음이의어 '필기하고', '정보 검색' 등 오탐 방지)
+function matchSubjectInText(studentTxt, normTxt, subj) {
+  if (subj === "기하") {
+    if (/\[[^\]]*기하[^\]]*\]|기하와\s*벡터|기하학|기하\s*(?:과목|교과|세특)/.test(studentTxt)) return true;
+    const matches = studentTxt.match(/([가-힣]?)기하/g);
+    if (!matches) return false;
+    const invalidPrefixes = ['필', '포', '환', '폐', '야', '동', '얘', '하', '쓰', '읽', '듣', '들', '따', '먹', '받', '주'];
+    return matches.some(m => {
+      const prefix = m.length === 3 ? m[0] : '';
+      return !invalidPrefixes.includes(prefix);
+    });
+  }
+  if (subj === "정보") {
+    if (/\[[^\]]*정보[^\]]*\]|정보\s*(?:과목|교과|세특)|정보과학|정보통신/.test(studentTxt)) return true;
+    return /(?:과목|교과)\s*정보\b/.test(studentTxt);
+  }
+  if (subj === "문학" || subj === "독서" || subj === "철학" || subj === "경제") {
+    if (new RegExp('(\\[|\\b|과목\\s*|교과\\s*)' + subj + '(\\s*세특|\\s*과목|\\s*교과|\\s*시간|\\s*수업|\\s*단위|\\s*\\:|\\s*\\(|\\]|\\b)').test(studentTxt)) return true;
+    return new RegExp('(?:과목|교과|선택|수강한|배운|이수한)\\s*' + subj + '|' + subj + '(?:\\s*교과|\\s*과목|\\s*세특|\\s*시간|\\s*수업)').test(studentTxt);
+  }
+  const normSubj = normalizeSubject(subj);
+  return studentTxt.includes(subj) || normTxt.includes(normSubj);
+}
+
+// 학년별 과목 위계 가중치 판별 (1학년 1.0x, 2학년 1.8x, 3학년/고급 2.5x)
+function getGradeWeightForSubject(subjName) {
+  const norm = normalizeSubject(subjName);
+  const grade3Subjs = ["미적분", "기하", "인공지능수학", "경제수학", "물리학Ⅱ", "화학Ⅱ", "생명과학Ⅱ", "지구과학Ⅱ", "고급", "심화", "사회문제탐구", "전문"];
+  if (grade3Subjs.some(s => norm.includes(s))) return 2.5;
+
+  const grade1Subjs = ["통합사회", "통합과학", "공통수학", "공통국어", "공통영어", "과학탐구실험", "한국사"];
+  if (grade1Subjs.some(s => norm.includes(s)) || (norm === "국어" || norm === "수학" || norm === "영어")) return 1.0;
+
+  return 1.8;
+}
+
+// 텍스트 블록의 학년(시계열) 분리 헬퍼
 function splitByGrades(sectionTxt) {
   const gradeBlocks = { g1: "", g2: "", g3: "", unassigned: "" };
   if (!sectionTxt) return gradeBlocks;
 
-  // 명시적 학년 키워드가 있는 경우에만 분할
-  if (/1\s*학년|2\s*학년|3\s*학년|고\s*[123]/.test(sectionTxt)) {
+  if (/1\s*학년|2\s*학년|3\s*학년/.test(sectionTxt)) {
     const lines = sectionTxt.split("\n");
     let currentGrade = "g1";
     lines.forEach(line => {
@@ -1416,16 +2115,579 @@ function splitByGrades(sectionTxt) {
       gradeBlocks[currentGrade] += line + "\n";
     });
   } else {
-    // 학년 구분이 없는 경우 강제 3분할 대신 표준 가중치(unassigned)로 배정
-    gradeBlocks.unassigned = sectionTxt;
+    const lines = sectionTxt.split("\n").filter(l => l.trim().length > 0);
+    if (lines.length >= 6) {
+      const p1 = Math.floor(lines.length / 3);
+      const p2 = Math.floor((lines.length * 2) / 3);
+      gradeBlocks.g1 = lines.slice(0, p1).join("\n");
+      gradeBlocks.g2 = lines.slice(p1, p2).join("\n");
+      gradeBlocks.g3 = lines.slice(p2).join("\n");
+    } else {
+      gradeBlocks.unassigned = sectionTxt;
+    }
   }
   return gradeBlocks;
 }
 
+// 생기부 영역 및 학년별 가중 청크 생성 함수
+function getWeightedTextChunks(sections, studentTxt) {
+  const chunks = [];
+  
+  // 1. 진로활동 (Section weight: 3.0)
+  if (sections && sections.career && sections.career.trim()) {
+    const grades = splitByGrades(sections.career);
+    if (grades.g3) chunks.push({ text: grades.g3, secWeight: 3.0, gradeWeight: 2.5, name: "진로활동(3학년)" });
+    if (grades.g2) chunks.push({ text: grades.g2, secWeight: 3.0, gradeWeight: 1.8, name: "진로활동(2학년)" });
+    if (grades.g1) chunks.push({ text: grades.g1, secWeight: 3.0, gradeWeight: 1.0, name: "진로활동(1학년)" });
+    if (grades.unassigned) chunks.push({ text: grades.unassigned, secWeight: 3.0, gradeWeight: 1.6, name: "진로활동" });
+  }
+
+  // 2. 동아리활동 (Section weight: 2.5 - 학생 능동 선택)
+  if (sections && sections.club && sections.club.trim()) {
+    const grades = splitByGrades(sections.club);
+    if (grades.g3) chunks.push({ text: grades.g3, secWeight: 2.5, gradeWeight: 2.5, name: "동아리(3학년)" });
+    if (grades.g2) chunks.push({ text: grades.g2, secWeight: 2.5, gradeWeight: 1.8, name: "동아리(2학년)" });
+    if (grades.g1) chunks.push({ text: grades.g1, secWeight: 2.5, gradeWeight: 1.0, name: "동아리(1학년)" });
+    if (grades.unassigned) chunks.push({ text: grades.unassigned, secWeight: 2.5, gradeWeight: 1.6, name: "동아리" });
+  }
+
+  // 3. 과목별 세특 (Section weight: 1.5 기본, 핵심 교과는 2.2)
+  if (sections && sections.subjects && Object.keys(sections.subjects).length > 0) {
+    for (const [subjName, sTxt] of Object.entries(sections.subjects)) {
+      if (!sTxt || !sTxt.trim()) continue;
+      const gWeight = getGradeWeightForSubject(subjName);
+      chunks.push({ text: sTxt, subjName: subjName, secWeight: 1.5, gradeWeight: gWeight, name: subjName });
+    }
+  }
+
+  // 4. 자율활동 (Section weight: 0.8)
+  if (sections && sections.autonomy && sections.autonomy.trim()) {
+    const grades = splitByGrades(sections.autonomy);
+    if (grades.g3) chunks.push({ text: grades.g3, secWeight: 0.8, gradeWeight: 2.5, name: "자율활동(3학년)" });
+    if (grades.g2) chunks.push({ text: grades.g2, secWeight: 0.8, gradeWeight: 1.8, name: "자율활동(2학년)" });
+    if (grades.g1) chunks.push({ text: grades.g1, secWeight: 0.8, gradeWeight: 1.0, name: "자율활동(1학년)" });
+    if (grades.unassigned) chunks.push({ text: grades.unassigned, secWeight: 0.8, gradeWeight: 1.2, name: "자율활동" });
+  }
+
+  // 5. 행동특성 (Section weight: 0.7)
+  if (sections && sections.behavior && sections.behavior.trim()) {
+    chunks.push({ text: sections.behavior, secWeight: 0.7, gradeWeight: 1.5, name: "행동특성" });
+  }
+
+  // 6. 폴백: 섹션 분리가 안 된 경우 전체 텍스트 활용
+  if (chunks.length === 0 && studentTxt && studentTxt.trim()) {
+    chunks.push({ text: studentTxt, secWeight: 1.0, gradeWeight: 1.5, name: "전체본문" });
+  }
+
+  return chunks;
+}
+
 // -------------------------------------------------------------
-// [3단계] 대학 요강 GAP 분석의 4대 역량 비율 방어 함수
+// [4차원 다면 평가 추천 엔진 메인 함수]
 // -------------------------------------------------------------
-function renderPresetGuideMatching(studentTxt, aPct, cPct, mPct, lvlData, gPct) {
+function recommendTopMajors(studentTxt, sections, aPct, cPct, mPct, lvlData) {
+  const normTxt = normalizeSubject(studentTxt);
+  const avgLevel = lvlData ? parseFloat(lvlData.avgLevel) : 2.0;
+
+  // 0단계: 대계열(STEM vs 인문사회) 성향 판별 (고교 2~3학년 선택과목 및 활동 어휘 밀도)
+  const stemElectiveSubjs = ["물리학Ⅰ", "물리학Ⅱ", "화학Ⅰ", "화학Ⅱ", "생명과학Ⅰ", "생명과학Ⅱ", "지구과학Ⅰ", "지구과학Ⅱ", "미적분", "인공지능 수학", "프로그래밍"];
+  let stemElectiveMatches = stemElectiveSubjs.filter(s => matchSubjectInText(studentTxt, normTxt, s)).length;
+  if (matchSubjectInText(studentTxt, normTxt, "기하")) stemElectiveMatches += 1;
+  if (matchSubjectInText(studentTxt, normTxt, "정보")) stemElectiveMatches += 1;
+
+  const humElectiveSubjs = ["정치와 법", "사회문제 탐구", "사회·문화", "생활과 윤리", "윤리와 사상", "경제", "경제수학", "세계사", "동아시아사", "한국지리", "세계지리", "고전 읽기", "심화 국어", "철학", "고전과 윤리"];
+  const humElectiveMatches = humElectiveSubjs.filter(s => matchSubjectInText(studentTxt, normTxt, s)).length;
+
+  const stemKwPat = /물리학|화학반응|전자기|회로|코딩|알고리즘|반도체|모빌리티|신소재|배터리|이차전지|단백질|세포|유전자|효소|신경전달|분자\s*구조|기계공학|소프트웨어|하드웨어|시뮬레이션|건축공학|건축설계|내진|스마트팜|작물|식물생명|임상간호|활력징후/g;
+  const humKwPat = /인권|사회문제|불평등|복지|민주주의|헌법|법률|공공정책|언론|미디어|저널리즘|기자|뉴스|소설|문학|작가|시인|사료|역사의식|철학|윤리적|마케팅|소비자|기업가|경영학|시장경제|금융|투자|교수학습|수업시연|교육과정/g;
+
+  const stemKwCount = (studentTxt.match(stemKwPat) || []).length;
+  const humKwCount = (studentTxt.match(humKwPat) || []).length;
+
+  const stemScore = stemElectiveMatches * 4 + stemKwCount;
+  const humScore = humElectiveMatches * 4 + humKwCount;
+
+  const isStemOriented = (stemScore >= 5 && stemScore > humScore * 1.4);
+  const isHumOriented = (humScore >= 5 && humScore > stemScore * 1.4);
+
+  let trackDesc = "계열 융합·자율 탐색 단계 (문·이과 미정)";
+  if (isStemOriented) trackDesc = "🔬 이공·자연과학계열 성향 감지";
+  else if (isHumOriented) trackDesc = "📖 인문·사회계열 성향 감지";
+
+  // 영역별·학년별 가중 텍스트 청크 수집
+  const chunks = getWeightedTextChunks(sections, studentTxt);
+  const careerTxt = (sections && sections.career) ? sections.career : "";
+
+  // 1단계: 13개 도메인별 4차원 지표 채점
+  let totalWeightedKwAll = 0;
+  const rawDomains = [];
+
+  MAJOR_RECOMMEND_DOMAINS.forEach(dom => {
+    // [Pillar 1: 과목 이수 게이트키핑]
+    let gateLocked = false;
+    let gateReason = "";
+
+    if (dom.gatekeeper && dom.gatekeeper.requiredAny) {
+      const hasReq = dom.gatekeeper.requiredAny.some(s => matchSubjectInText(studentTxt, normTxt, s));
+      if (!hasReq) {
+        gateLocked = true;
+        gateReason = dom.gatekeeper.failReason;
+      }
+    }
+
+    // A. 과목 이수 체계 점수 (최대 25점 - 핵심 과목 위계)
+    const coreMatches = (dom.coreSubjects || []).filter(s => matchSubjectInText(studentTxt, normTxt, s));
+    const genMatches = (dom.generalSubjects || []).filter(s => matchSubjectInText(studentTxt, normTxt, s));
+    const subjScore = Math.min(16, coreMatches.length * 8) + Math.min(9, genMatches.length * 3);
+
+    // [Pillar 2, 3, 4: 영역별 가중치 + 학년 시계열 + 어휘 변별력 TF-IDF]
+    let killerPoints = 0;
+    let specPoints = 0;
+    let genPoints = 0;
+
+    const matchedKiller = [];
+    const matchedSpec = [];
+    const matchedGen = [];
+
+    // 청크별 순회 채점
+    chunks.forEach(chunk => {
+      let chunkSecWeight = chunk.secWeight;
+      // 만약 핵심 교과목 세특인 경우 가중치 승격 (1.5 -> 2.2)
+      if (chunk.subjName && (dom.coreSubjects || []).includes(chunk.subjName)) {
+        chunkSecWeight = 2.2;
+      }
+
+      const totalMultiplier = chunkSecWeight * chunk.gradeWeight;
+
+      // 1) 킬러 키워드 (가중치 5.0x)
+      (dom.killerKeywords || []).forEach(kw => {
+        const matches = chunk.text.match(new RegExp(kw, 'g'));
+        if (matches && matches.length > 0) {
+          const rawCount = matches.length;
+          killerPoints += rawCount * 5.0 * totalMultiplier;
+          const exist = matchedKiller.find(m => m.kw === kw);
+          if (exist) exist.count += rawCount;
+          else matchedKiller.push({ kw, count: rawCount });
+        }
+      });
+
+      // 2) 전공 특화 키워드 (가중치 2.5x)
+      (dom.specKeywords || []).forEach(kw => {
+        const matches = chunk.text.match(new RegExp(kw, 'g'));
+        if (matches && matches.length > 0) {
+          const rawCount = matches.length;
+          specPoints += rawCount * 2.5 * totalMultiplier;
+          const exist = matchedSpec.find(m => m.kw === kw);
+          if (exist) exist.count += rawCount;
+          else matchedSpec.push({ kw, count: rawCount });
+        }
+      });
+
+      // 3) 일반/범용 키워드 (노이즈 단어는 0.4x 감쇠, 일반 단어는 0.8x)
+      (dom.generalKeywords || []).forEach(kw => {
+        const matches = chunk.text.match(new RegExp(kw, 'g'));
+        if (matches && matches.length > 0) {
+          const rawCount = matches.length;
+          const isNoise = GLOBAL_GENERIC_NOISE.has(kw);
+          const baseWeight = isNoise ? 0.4 : 0.8;
+          genPoints += rawCount * baseWeight * totalMultiplier;
+          const exist = matchedGen.find(m => m.kw === kw);
+          if (exist) exist.count += rawCount;
+          else matchedGen.push({ kw, count: rawCount });
+        }
+      });
+    });
+
+    const domainWeightedKwScore = killerPoints + specPoints + genPoints;
+    totalWeightedKwAll += domainWeightedKwScore;
+
+    // 키워드 점수 환산 (최대 35점)
+    // 킬러 및 특화 어휘가 전혀 없고 일반 어휘만 있는 경우 10점 상한 패널티 (쏠림 차단)
+    let kwScore = 0;
+    if (killerPoints === 0 && specPoints === 0) {
+      kwScore = Math.min(10, Math.round(Math.log2(genPoints + 1) * 2));
+    } else {
+      const killerPart = Math.min(20, Math.round(killerPoints * 0.45));
+      const specPart = Math.min(10, Math.round(specPoints * 0.25));
+      const genPart = Math.min(5, Math.round(genPoints * 0.1));
+      kwScore = Math.min(35, killerPart + specPart + genPart);
+    }
+
+    // C. 탐구 질적 수준 및 실증 증거 (최대 20점)
+    let lvlScore = 4;
+    if (avgLevel >= 3.0) lvlScore = 12;
+    else if (avgLevel >= 2.5) lvlScore = 9;
+    else if (avgLevel >= 2.0) lvlScore = 6;
+
+    let evidenceScore = 0;
+    if (dom.category === "공학계열") {
+      if (studentTxt.includes("수식") || studentTxt.includes("유도") || studentTxt.includes("증명")) evidenceScore += 3;
+      if (studentTxt.includes("실험") || studentTxt.includes("회로") || studentTxt.includes("설계")) evidenceScore += 3;
+      if (studentTxt.includes("모델링") || studentTxt.includes("시뮬레이션") || studentTxt.includes("알고리즘") || studentTxt.includes("구조")) evidenceScore += 2;
+    } else if (dom.category === "사회/상경계열") {
+      if (studentTxt.includes("통계") || studentTxt.includes("데이터") || studentTxt.includes("설문")) evidenceScore += 3;
+      if ((studentTxt.includes("갈등") && (studentTxt.includes("조율") || studentTxt.includes("중재"))) || studentTxt.includes("불평등")) evidenceScore += 3;
+      if (studentTxt.includes("사회") || studentTxt.includes("정책") || studentTxt.includes("시장")) evidenceScore += 2;
+    } else if (dom.category === "의약학/보건계열") {
+      if (studentTxt.includes("실험") || studentTxt.includes("가설") || studentTxt.includes("돌봄") || studentTxt.includes("라포")) evidenceScore += 3;
+      if (studentTxt.includes("세포") || studentTxt.includes("생명") || studentTxt.includes("환자") || studentTxt.includes("치료")) evidenceScore += 3;
+      if (studentTxt.includes("임상") || studentTxt.includes("기전") || studentTxt.includes("윤리")) evidenceScore += 2;
+    } else if (dom.category === "사범/교육") {
+      if (studentTxt.includes("수업") || studentTxt.includes("멘토링") || studentTxt.includes("지도")) evidenceScore += 3;
+      if (studentTxt.includes("학습") || studentTxt.includes("교수") || studentTxt.includes("설명")) evidenceScore += 3;
+      if (studentTxt.includes("배려") || studentTxt.includes("소통") || studentTxt.includes("성장")) evidenceScore += 2;
+    } else {
+      if (studentTxt.includes("비평") || studentTxt.includes("서평") || studentTxt.includes("감상평") || studentTxt.includes("문학적")) evidenceScore += 3;
+      if (studentTxt.includes("역사") || studentTxt.includes("사료") || studentTxt.includes("철학") || studentTxt.includes("성찰") || studentTxt.includes("고전")) evidenceScore += 3;
+      if (studentTxt.includes("작품") || studentTxt.includes("시대정신") || studentTxt.includes("가치관") || studentTxt.includes("담론")) evidenceScore += 2;
+    }
+    const inquiryScore = lvlScore + Math.min(8, evidenceScore);
+
+    // D. 특정 학과/직업 단어 직접 노출 빈도 측정 (진로활동 및 전체 세특)
+    let explicitCount = 0;
+    const matchedExplicitWords = [];
+    (dom.targetMajorKeywords || []).forEach(tw => {
+      const reg = new RegExp(tw, 'g');
+      const m = studentTxt.match(reg);
+      if (m && m.length > 0) {
+        explicitCount += m.length;
+        matchedExplicitWords.push({ word: tw, count: m.length });
+      }
+    });
+
+    const careerHope = (sections && sections.careerHope) ? sections.careerHope : "";
+    const inCareerHope = Boolean(careerHope && ((dom.targetMajorKeywords || []).some(tw => careerHope.includes(tw) || tw.includes(careerHope)) || (dom.targetHint && new RegExp(dom.targetHint).test(careerHope))));
+    const inCareerSection = (dom.targetMajorKeywords || []).some(tw => careerTxt.includes(tw));
+    const isExplicitTarget = inCareerHope || inCareerSection || (explicitCount >= 2);
+    const explicitBonus = isExplicitTarget ? Math.min(45, (inCareerHope ? 32 : 20) + explicitCount * 4) : 0;
+
+    // 교차 계열 추가 게이트키핑 (이과 학생의 인문계열 1위 방지 / 문과 학생의 공학·의약학 1위 방지)
+    if (!isExplicitTarget) {
+      if (isStemOriented && dom.category === "인문계열") {
+        if (matchedKiller.length === 0) {
+          gateLocked = true;
+          gateReason = "이공계열 선택과목 이수자로 인문계열 권장 위계 미충족";
+        }
+      }
+      if (isHumOriented && (dom.category === "공학계열" || dom.category === "의약학/보건계열")) {
+        if (matchedKiller.length === 0) {
+          gateLocked = true;
+          gateReason = "인문사회 선택과목 이수자로 공학/의약학 필수 위계 미충족";
+        }
+      }
+    }
+
+    rawDomains.push({
+      dom,
+      gateLocked,
+      gateReason,
+      subjScore,
+      kwScore,
+      inquiryScore,
+      domainWeightedKwScore,
+      killerPoints,
+      specPoints,
+      genPoints,
+      matchedKiller,
+      matchedSpec,
+      matchedGen,
+      coreMatches,
+      genMatches,
+      explicitCount,
+      matchedExplicitWords,
+      inCareerSection,
+      isExplicitTarget,
+      explicitBonus
+    });
+  });
+
+  // 2단계: 전공 키워드 점유율 산출 및 종합 점수 계산
+  const results = [];
+  let hasAnyExplicitTarget = false;
+
+  rawDomains.forEach(d => {
+    if (d.isExplicitTarget && !d.gateLocked) hasAnyExplicitTarget = true;
+
+    // 가중 키워드 점유율 (최대 20점)
+    const share = totalWeightedKwAll > 0 ? (d.domainWeightedKwScore / totalWeightedKwAll) : 0;
+    let specShareScore = 0;
+    if (share >= 0.35) specShareScore = 20;
+    else if (share >= 0.22) specShareScore = 14;
+    else if (share >= 0.12) specShareScore = 8;
+    else if (share >= 0.05) specShareScore = 4;
+    else specShareScore = 0;
+
+    // 4대 축 종합 점수 + 직접 지망 가산점
+    let total = d.subjScore + d.kwScore + d.inquiryScore + specShareScore + d.explicitBonus;
+
+    // [⭐ Gatekeeper 페널티 엄격 적용]
+    // 필수 과목 미이수 또는 위계 부적합 시 최대 30점으로 캡핑 (1순위 추천 원천 차단)
+    if (d.gateLocked) {
+      total = Math.min(30, total - 25);
+    }
+
+    // 킬러 및 특화 어휘가 0건이고 직접 지망도 없으면 25점 상한
+    if (d.matchedKiller.length === 0 && d.matchedSpec.length === 0 && !d.isExplicitTarget) {
+      total = Math.min(25, total);
+    }
+
+    // 보수적 상한선: 직접 지망 학생은 92점까지, 일반 추론 학생은 88점 상한 (게이트락은 30점)
+    const maxCap = d.gateLocked ? 30 : (d.isExplicitTarget ? 92 : 88);
+    const conservativeScore = Math.min(maxCap, Math.max(5, total));
+
+    // 매칭된 키워드 (킬러 어휘 우선, 그 후 전문 어휘)
+    const combinedKws = [...d.matchedKiller, ...d.matchedSpec, ...d.matchedGen].slice(0, 6);
+
+    results.push({
+      domain: d.dom,
+      gateLocked: d.gateLocked,
+      gateReason: d.gateReason,
+      totalScore: conservativeScore,
+      subjScore: d.subjScore,
+      kwScore: d.kwScore,
+      inquiryScore: d.inquiryScore,
+      specShareScore: specShareScore,
+      explicitBonus: d.explicitBonus,
+      isExplicitTarget: d.isExplicitTarget,
+      explicitCount: d.explicitCount,
+      matchedExplicitWords: d.matchedExplicitWords,
+      matchedKiller: d.matchedKiller,
+      matchedSpec: d.matchedSpec,
+      sharePct: Math.round(share * 100),
+      domainWeightedKwScore: Math.round(d.domainWeightedKwScore),
+      matchedSubjs: [...d.coreMatches, ...d.genMatches],
+      matchedKws: combinedKws
+    });
+  });
+
+  // [⭐ 핵심 정렬 로직]
+  // 1. 게이트락(필수과목 미이수) 도메인은 최하위로 밀림 (1순위 차단)
+  // 2. 게이트락 통과 + 직접 지망 감지 전공 최우선 Fast-Track (🥇 1순위)
+  // 3. 그 후 종합 점수 및 전공 점유율 순 정렬
+  results.sort((a, b) => {
+    if (a.gateLocked !== b.gateLocked) {
+      return a.gateLocked ? 1 : -1;
+    }
+    if (a.isExplicitTarget !== b.isExplicitTarget) {
+      return a.isExplicitTarget ? -1 : 1;
+    }
+    if (a.isExplicitTarget && b.isExplicitTarget) {
+      if (b.explicitCount !== a.explicitCount) {
+        return b.explicitCount - a.explicitCount;
+      }
+    }
+    return b.totalScore - a.totalScore || b.specShareScore - a.specShareScore;
+  });
+
+  // 진로 미확정 판별 (직접 명시된 전공이 없고, 최고점이 45점 미만이거나 유효 킬러/특화 키워드가 전무한 경우)
+  const highestScore = results.length > 0 ? results[0].totalScore : 0;
+  const top1HasKillerOrSpec = results.length > 0 && (results[0].matchedKiller.length > 0 || results[0].matchedSpec.length > 0);
+  const isUndecided = !hasAnyExplicitTarget && (highestScore < 45 || !top1HasKillerOrSpec);
+
+  return {
+    isUndecided: isUndecided,
+    trackDesc: trackDesc,
+    highestScore: highestScore,
+    hasAnyExplicitTarget: hasAnyExplicitTarget,
+    top3: results.slice(0, 3),
+    allResults: results
+  };
+}
+
+function renderMajorRecommendations(recData) {
+  const container = document.getElementById("recommendContainer");
+  if (!container) return;
+  container.innerHTML = "";
+
+  // [진로가 애매한 경우: 명확한 전공분야 없음 표출]
+  if (recData.isUndecided) {
+    const candidateCardsHtml = recData.top3.map(r => `
+      <div style="border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; background: #fafafa; display: flex; flex-direction: column; justify-content: space-between;">
+        <div>
+          <div style="font-size: 0.74rem; font-weight: 800; color: #64748b; margin-bottom: 2px;">[${r.domain.category}] 잠재 탐색 계열</div>
+          <div style="font-weight: 800; color: #0f172a; font-size: 0.95rem; margin-bottom: 4px;">${r.domain.name}</div>
+          <div style="font-size: 0.8rem; color: #64748b; margin-bottom: 8px;">
+            현재 적합도: <b style="color: #d97706;">${r.totalScore}점</b> <span style="font-size:0.72rem; color:#dc2626; font-weight:700;">(전공 쐐기 활동 부재)</span>
+          </div>
+        </div>
+        <button class="rec-btn" style="padding: 6px 8px; font-size: 0.78rem;" onclick="applyRecommendedMajor('${r.domain.category}', '${r.domain.targetHint}')">
+          이 계열로 목표 대학 요강 GAP 진단 ➔
+        </button>
+      </div>
+    `).join("");
+
+    container.innerHTML = `
+      <div style="background: #f8fafc; border: 2px dashed #94a3b8; border-radius: 12px; padding: 24px 18px; text-align: center; margin-top: 6px;">
+        <div style="font-size: 2.2rem; margin-bottom: 6px;">🧭</div>
+        <h3 style="font-size: 1.25rem; color: #0f172a; font-weight: 800; margin-bottom: 6px;">
+          현재 생기부상 '명확한 전공분야 없음' (진로 미확정·기초 탐색 단계)
+        </h3>
+        <div style="display: inline-block; padding: 4px 14px; background: #e0f2fe; color: #0369a1; border-radius: 20px; font-size: 0.84rem; font-weight: 800; margin-bottom: 12px; border: 1px solid #bae6fd;">
+          🚩 감지된 기본 적성: ${recData.trackDesc}
+        </div>
+        <p style="font-size: 0.88rem; color: #475569; max-width: 740px; margin: 0 auto 16px; line-height: 1.6;">
+          입력된 생활기록부 기록은 특정 학과에 특화된 심화 프로젝트나 전문 용어 대신, <b>공통 기초 교과 및 진로 탐색 위주</b>로 기록되어 있습니다. 입학사정관 기준 '전공 쐐기(Specialization)'가 아직 형성되지 않아 세부 전공을 억지로 단정 짓지 않고 현재 드러난 미세 적성 후보군을 제시합니다.
+        </p>
+
+        <!-- 잠재 탐색 후보군 -->
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px; max-width: 840px; margin: 0 auto 16px; text-align: left;">
+          <b style="font-size: 0.85rem; color: #1e293b; display: block; margin-bottom: 10px;">
+            💡 기초 기록 기반 잠재 관심 계열 (참고용 후보 - 전공 쐐기 활동 필요):
+          </b>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px;">
+            ${candidateCardsHtml}
+          </div>
+        </div>
+
+        <div style="font-size: 0.84rem; color: #b45309; background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 12px 16px; max-width: 840px; margin: 0 auto; text-align: left; line-height: 1.5;">
+          📢 <b>사정관의 냉정 조언:</b> 학생부종합전형에서 상위권 대학에 지원하려면 2학년 말~3학년 초까지 목표 학과에 직결되는 '1인 심화 연구 보고서'와 '위계적 선택과목'을 반드시 구축해야 합격선(70점 이상)에 도달합니다. 조속히 1~2개 관심 학과를 확정하고 수행평가 주제를 구체화하세요.
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  // [뚜렷한 전공 지향성이 발견된 경우: TOP 3 추천 카드 렌더링]
+  const rankBadges = [
+    { cls: "rank-1", text: "🥇 최적 적합 1순위 (강력 추천)", topCls: "top1" },
+    { cls: "rank-2", text: "🥈 유력 적합 2순위 (경쟁력 확보)", topCls: "" },
+    { cls: "rank-3", text: "🥉 연계 적합 3순위 (서브/융합 지원)", topCls: "" }
+  ];
+
+  recData.top3.forEach((r, idx) => {
+    const b = rankBadges[idx] || rankBadges[2];
+    const subjsHtml = r.matchedSubjs.length > 0 
+      ? r.matchedSubjs.map(s => `<span class="pill checked" style="font-size:0.73rem; padding:2px 7px;">✔ ${s}</span>`).join(" ") 
+      : "<span style='font-size:0.75rem; color:var(--sub);'>직접 일치 과목 없음</span>";
+
+    // 키워드 뱃지: 킬러 키워드는 황금색 배지, 특화 키워드는 파란색 배지
+    const killerSet = new Set((r.matchedKiller || []).map(k => k.kw));
+    const kwsHtml = r.matchedKws.length > 0
+      ? r.matchedKws.map(k => {
+          if (killerSet.has(k.kw)) {
+            return `<span style="font-size:0.72rem; padding:2px 6px; background:#fef3c7; color:#b45309; border:1px solid #fcd34d; border-radius:4px; font-weight:800; margin-right:3px;">⭐#${k.kw}(${k.count})</span>`;
+          }
+          return `<span class="badge ${idx === 0 ? 'career' : 'academic'}" style="font-size:0.72rem; padding:2px 6px; margin-right:3px;">#${k.kw}(${k.count})</span>`;
+        }).join(" ")
+      : "<span style='font-size:0.75rem; color:var(--sub);'>어휘 미감지</span>";
+
+    let gradeAdvice = "";
+    if (r.gateLocked) gradeAdvice = "🔴 필수 권장이수과목 미충족 (1차 서류 탈락 위험)";
+    else if (r.totalScore >= 80) gradeAdvice = "🟢 서류 경쟁력 최상위 (학종 1차 합격 유력)";
+    else if (r.totalScore >= 65) gradeAdvice = "🔵 적정 지원 가능 (보완 시 경쟁력 강화)";
+    else gradeAdvice = "🟠 소신/융합 지원 권장 (전공 키워드 보완 필요)";
+
+    const explicitBadgeHtml = r.isExplicitTarget && r.matchedExplicitWords.length > 0
+      ? `<div style="margin: 3px 0 6px;">
+           <span style="font-size:0.74rem; background:#dcfce7; color:#15803d; padding:2px 8px; border-radius:6px; border:1px solid #86efac; font-weight:800;">
+             🎯 생기부 직접 지망 감지: [${r.matchedExplicitWords.map(w => w.word).slice(0, 2).join(', ')}] (언급 ${r.explicitCount}회)
+           </span>
+         </div>`
+      : '';
+
+    const gateBadgeHtml = r.gateLocked
+      ? `<div style="font-size:0.72rem; color:#dc2626; background:#fef2f2; border:1px solid #fecaca; border-radius:5px; padding:3px 8px; margin: 4px 0; font-weight:700;">
+           ⚠️ [사정관 게이트키퍼 경고] ${r.gateReason}
+         </div>`
+      : `<div style="margin: 2px 0 4px;">
+           <span style="font-size:0.71rem; color:#15803d; font-weight:700;">✅ 필수 권장이수과목 체계 충족</span>
+         </div>`;
+
+    container.innerHTML += `
+      <div class="rec-card ${b.topCls}">
+        <div>
+          <div class="rec-rank-badge ${b.cls}">${b.text}</div>
+          <div class="rec-title">${r.domain.name}</div>
+          ${explicitBadgeHtml}
+          ${gateBadgeHtml}
+          <div style="font-size:0.76rem; color:var(--sub); font-weight:700; margin-bottom:4px;">[${r.domain.category}] · ${r.domain.badge}</div>
+          
+          <div style="display:flex; align-items:baseline; justify-content:space-between; margin: 8px 0 4px;">
+            <div style="display:flex; align-items:baseline; gap:6px;">
+              <span class="rec-score">${r.totalScore}점</span>
+              <span style="font-size:0.75rem; color:var(--sub);">/ 100점 만점</span>
+            </div>
+            <span style="font-size:0.75rem; font-weight:800; color:#475569;">전공 점유율 ${r.sharePct}%</span>
+          </div>
+          <div style="font-size:0.74rem; font-weight:700; color:#1e293b; margin-bottom:8px;">${gradeAdvice}</div>
+          
+          <!-- 사정관 4차원 다면 채점 분해표 -->
+          <div style="font-size:0.72rem; color:#475569; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:6px 8px; margin-bottom:10px; line-height:1.5;">
+            <b>사정관 4차원 채점:</b> 교과위계 ${r.subjScore}점 + 킬러·특화어휘 ${r.kwScore}점 + 탐구심화 ${r.inquiryScore}점 + 전공집중도 ${r.specShareScore}점
+            ${r.isExplicitTarget ? `<span style="color:#15803d; font-weight:800;"> + 직접지망 ${r.explicitBonus}점</span>` : ''}
+            <div style="font-size:0.69rem; color:#64748b; margin-top:2px;">⏱ 진로·동아리 가중치 및 학년 시계열(1학년 1.0x ➔ 3학년 2.5x) 연산 반영</div>
+          </div>
+
+          <p class="rec-desc">${r.domain.desc}</p>
+          
+          <div style="margin-bottom:8px;">
+            <div style="font-size:0.75rem; font-weight:800; color:#334155; margin-bottom:4px;">🔑 핵심 발견 키워드 (⭐=독점 킬러 어휘):</div>
+            <div>${kwsHtml}</div>
+          </div>
+          
+          <div style="margin-bottom:14px;">
+            <div style="font-size:0.75rem; font-weight:800; color:#334155; margin-bottom:4px;">📚 연계 이수 과목:</div>
+            <div>${subjsHtml}</div>
+          </div>
+        </div>
+
+        <button class="rec-btn" onclick="applyRecommendedMajor('${r.domain.category}', '${r.domain.targetHint}')">
+          🎯 이 전공으로 1:1 맞춤 진단 적용 ➔
+        </button>
+      </div>
+    `;
+  });
+}
+
+function applyRecommendedMajor(catName, targetHint) {
+  const catSel = document.getElementById("categorySelect");
+  if (catSel) {
+    catSel.value = catName;
+    filterUnivList();
+  }
+  
+  const deptSel = document.getElementById("deptSelect");
+  if (deptSel && deptSel.options.length > 0) {
+    let matchedIndex = -1;
+    const hints = targetHint.split("|");
+    for (let i = 0; i < deptSel.options.length; i++) {
+      const optText = deptSel.options[i].text;
+      const optVal = deptSel.options[i].value;
+      if (hints.some(h => optText.includes(h) || optVal.includes(h))) {
+        matchedIndex = i;
+        break;
+      }
+    }
+    if (matchedIndex !== -1) {
+      deptSel.selectedIndex = matchedIndex;
+    } else {
+      deptSel.selectedIndex = 0;
+    }
+  }
+
+  if (lastAnalysisState) {
+    renderPresetGuideMatching(
+      lastAnalysisState.studentTxt,
+      lastAnalysisState.aPct,
+      lastAnalysisState.cPct,
+      lastAnalysisState.mPct,
+      lastAnalysisState.lvlData
+    );
+  }
+
+  const gapEl = document.getElementById("gapContainer");
+  if (gapEl) {
+    gapEl.scrollIntoView({ behavior: "smooth", block: "center" });
+    gapEl.style.transition = "box-shadow 0.3s ease";
+    gapEl.style.boxShadow = "0 0 0 4px rgba(37,99,235,0.4)";
+    setTimeout(() => { gapEl.style.boxShadow = ""; }, 1200);
+  }
+}
+
+// -------------------------------------------------------------
+// [엄격·냉정 평가 엔진] 프리셋 DB 기반 GAP 분석 렌더링
+// -------------------------------------------------------------
+function renderPresetGuideMatching(studentTxt, aPct, cPct, mPct, lvlData) {
   const selectedUniv = document.getElementById("univSelect").value;
   const selectedDept = document.getElementById("deptSelect").value;
   const univData = UNIV_DATABASE[selectedUniv];
@@ -1466,7 +2728,7 @@ function renderPresetGuideMatching(studentTxt, aPct, cPct, mPct, lvlData, gPct) 
     const optRate = checkedOpt.length / deptData.optSubjects.length;
     courseScore = Math.round(optRate * 35);
   } else {
-    courseScore = 25;
+    courseScore = 25; // 별도 지정 없을 시 기본 25점 인정
   }
 
   // 2. 인재상 & 전문 학술 어휘 적합도 엄격 점검 (최대 30점)
@@ -1488,30 +2750,9 @@ function renderPresetGuideMatching(studentTxt, aPct, cPct, mPct, lvlData, gPct) 
   const kwDensityScore = Math.min(15, Math.round(totalKwOccurrences * 2.5));
   const keywordScore = Math.min(30, kwDiversityScore + kwDensityScore);
 
-  // 3. 대학 전형 공식 반영비율 vs 학생 실제 역량 점유율 오차(GAP) 계산 (4대 역량 유연 대응)
+  // 3. 대학 전형 공식 반영비율 vs 학생 실제 역량 점유율 오차(GAP) (최대 20점)
   const targetRatio = univData.evalRatio || { academic: 40, career: 40, community: 20 };
-  const targetAcademic = targetRatio.academic || 0;
-  const targetCareer = targetRatio.career || 0;
-  const targetGrowth = targetRatio.growth || 0;
-  const targetCommunity = targetRatio.community || 0;
-
-  const curGPct = (gPct !== undefined) ? gPct : 25;
-
-  let gapDiff = 0;
-  if (targetGrowth > 0) {
-    // 4대 역량을 독립 평가하는 대학 (서강대, 고려대 등)
-    gapDiff = (Math.abs(targetAcademic - (aPct || 25)) + 
-               Math.abs(targetCareer - (cPct || 25)) + 
-               Math.abs(targetGrowth - curGPct) + 
-               Math.abs(targetCommunity - (mPct || 25))) / 2;
-  } else {
-    // 3대 역량 평가 대학 (성장역량을 진로 50%, 학업 50%로 유연 배분하여 비교)
-    const studentCareerCombined = (cPct || 25) + Math.round(curGPct * 0.5);
-    const studentAcademicCombined = (aPct || 25) + Math.round(curGPct * 0.5);
-    gapDiff = (Math.abs(targetAcademic - studentAcademicCombined) + 
-               Math.abs(targetCareer - studentCareerCombined) + 
-               Math.abs(targetCommunity - (mPct || 25))) / 2;
-  }
+  const gapDiff = (Math.abs(targetRatio.academic - (aPct || 33)) + Math.abs(targetRatio.career - (cPct || 33)) + Math.abs(targetRatio.community - (mPct || 34))) / 2;
   const ratioFitScore = Math.max(0, Math.round(20 - (gapDiff * 0.7)));
 
   // 4. 사정관 질적 탐구 수준(Level 1~4) 엄격 보정 (최대 15점)
@@ -1543,7 +2784,7 @@ function renderPresetGuideMatching(studentTxt, aPct, cPct, mPct, lvlData, gPct) 
       <div class="gap-header">
         <div>
           <div class="gap-title">🏛 ${selectedUniv} - ${selectedDept}</div>
-          <div class="gap-meta">대학 전형 공식 반영비율: 학업 ${targetAcademic}% / 진로 ${targetCareer}% ${targetGrowth > 0 ? `/ 성장 ${targetGrowth}%` : ''} / 공동체 ${targetCommunity}%</div>
+          <div class="gap-meta">대학 전형 공식 반영비율: 학업 ${targetRatio.academic}% / 진로 ${targetRatio.career}% / 공동체 ${targetRatio.community}%</div>
         </div>
         <div style="text-align:right;">
           <div class="gap-match" style="${badgeColor}">맞춤 적합도: ${totalMatchRate}%</div>
@@ -1551,6 +2792,7 @@ function renderPresetGuideMatching(studentTxt, aPct, cPct, mPct, lvlData, gPct) 
         </div>
       </div>
 
+      <!-- 냉정 평가 점수 분해표 -->
       <div style="background:#fff; border:1px solid #fed7aa; border-radius:8px; padding:12px 14px; margin-bottom:14px; font-size:0.83rem;">
         <b style="color:#9a3412; display:block; margin-bottom:6px;">📊 사정관 관점 냉정 채점 점수표 (총 100점 만점):</b>
         <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:8px; text-align:center;">
@@ -1599,6 +2841,976 @@ function renderPresetGuideMatching(studentTxt, aPct, cPct, mPct, lvlData, gPct) 
       </div>
     </div>
   `;
+}
+
+// -------------------------------------------------------------
+// B요강 직접 입력 시의 1:1 동적 매칭 (엄격 평가 모델)
+// -------------------------------------------------------------
+function renderDynamicGuideMatching(studentTxt, guideTxt, aPct, cPct, mPct, lvlData) {
+  const normStudentTxt = normalizeSubject(studentTxt);
+  const detectedGuideSubjects = COMMON_CORE_SUBJECTS.filter(subj => guideTxt.includes(subj));
+  const checkedSubjs = [];
+  const missingSubjs = [];
+  detectedGuideSubjects.forEach(s => {
+    const norm = normalizeSubject(s);
+    if (studentTxt.includes(s) || normStudentTxt.includes(norm)) checkedSubjs.push(s);
+    else missingSubjs.push(s);
+  });
+
+  const rawWords = guideTxt.match(/[가-힣]{2,6}/g) || [];
+  const stopWords = new Set(["모집", "전형", "안내", "가이드", "대학", "학과", "학생", "전체", "해당", "경우", "이수", "과목", "평가", "기준", "사항", "등록", "선발", "수시", "정시"]);
+  const wordFreq = {};
+  rawWords.forEach(w => {
+    if (!stopWords.has(w)) wordFreq[w] = (wordFreq[w] || 0) + 1;
+  });
+  const topGuideKeywords = Object.entries(wordFreq).sort((a, b) => b[1] - a[1]).slice(0, 15).map(e => e[0]);
+
+  const matchedKws = [];
+  const missingKws = [];
+  topGuideKeywords.forEach(kw => {
+    const m = studentTxt.match(new RegExp(kw, 'g'));
+    if (m) matchedKws.push(`${kw}(x${m.length})`);
+    else missingKws.push(kw);
+  });
+
+  // 1. 과목 이수 (35점 만점)
+  const subjScore = detectedGuideSubjects.length > 0 ? Math.round((checkedSubjs.length / detectedGuideSubjects.length) * 35) : 25;
+  // 2. 키워드 적합도 (35점 만점)
+  const kwScore = topGuideKeywords.length > 0 ? Math.round((matchedKws.length / topGuideKeywords.length) * 35) : 20;
+  // 3. 탐구 수준 보정 (30점 만점)
+  const avgLvl = lvlData ? parseFloat(lvlData.avgLevel) : 2.0;
+  const levelScore = Math.max(5, Math.min(30, Math.round((avgLvl - 1) * 8 + 6)));
+
+  const finalMatch = Math.min(100, Math.max(10, subjScore + kwScore + levelScore));
+
+  let gradeBadge = finalMatch >= 80 ? "🟢 양호 (일치도 우수)" : (finalMatch >= 60 ? "🟠 보통 (보완 권장)" : "🔴 주의 (맞춤 적합도 부족)");
+
+  const customArea = document.getElementById("gapContainer");
+  customArea.innerHTML = `
+    <div class="gap-box" style="border-color:var(--purple); background:#faf5ff;">
+      <div class="gap-header">
+        <div>
+          <div class="gap-title" style="color:var(--purple);">🎯 업로드된 대학 요강 1:1 맞춤 적합도 진단</div>
+          <div class="gap-meta" style="color:#7e22ce;">입력된 요강 텍스트의 핵심 지표와 권장 과목을 실시간 파싱하여 엄격 채점한 결과입니다.</div>
+        </div>
+        <div style="text-align:right;">
+          <div class="gap-match" style="background:#f3e8ff; color:var(--purple);">맞춤 적합도 지수: ${finalMatch}%</div>
+          <div style="font-size:0.75rem; font-weight:800; margin-top:4px; color:#7e22ce;">${gradeBadge}</div>
+        </div>
+      </div>
+
+      <div class="gap-item">
+        <b>① 요강 속 핵심 평가 키워드 일치 현황:</b><br>
+        ${matchedKws.length > 0 ? matchedKws.map(k => `<span class="pill checked">✔ ${k}</span>`).join("") : "<span style='font-size:0.8rem; color:var(--red)'>일치 키워드 전무</span>"}
+      </div>
+
+      <div class="gap-item">
+        <b>② 요강 내 권장 과목 감지 및 이수 여부:</b><br>
+        ${detectedGuideSubjects.length > 0 ? checkedSubjs.map(s => `<span class="pill checked">✔ ${s}</span>`).concat(missingSubjs.map(s => `<span class="pill missing">▲ ${s} (미이수)</span>`)).join("") : "<span style='font-size:0.8rem; color:var(--sub)'>요강 내 별도 명시된 필수과목 없음</span>"}
+      </div>
+
+      <div class="gap-item" style="margin-top:14px; font-size:0.86rem; color:#6b21a8; background:#f3e8ff; padding:12px; border-radius:8px;">
+        💡 <b>실전 매칭 피드백:</b> 요강에서 추출된 주요 키워드(${topGuideKeywords.slice(0, 5).join(", ")}) 중 ${matchedKws.length}개가 세특에 반영되어 있습니다.
+      </div>
+    </div>
+  `;
+}
+
+// -------------------------------------------------------------
+// 향후 생기부 작성/보완 전략 가이드
+// -------------------------------------------------------------
+function renderActionPlanGuide(text, aPct, cPct, mPct, validBooks, gPct) {
+  const container = document.getElementById("actionPlanContainer");
+  container.innerHTML = "";
+
+  const plans = [];
+
+  const hasPassive = (text.match(/참여함|시청함|들음|학습함|체험함/g) || []).length;
+  const hasActive = (text.match(/도출함|증명함|분석함|제시함|설계함|구현함|모델링함/g) || []).length;
+  
+  if (hasPassive >= hasActive) {
+    plans.push({
+      title: "1. 세특 서술 구조 혁신: 수동형 서술을 '4단계 인과 구조'로 전환",
+      desc: "현재 생기부는 단순 참여('~에 참여함', '~를 배움') 비중이 높습니다. 다음 학기 세특은 교사에게 제출하는 탐구 보고서부터 4단계 구조를 명확히 잡으세요.",
+      step: "<b>[작성 공식]</b> ① 수업 중 생긴 구체적 의문(호기심) → ② 관련 학술자료/도서 스스로 탐독(자기주도) → ③ 한계 극복 및 대안 도출(문제해결) → ④ 배운 점 및 후속 탐구 의지"
+    });
+  } else {
+    plans.push({
+      title: "1. 서술 완결성 유지: 주도적 탐구의 '후속 학문 확장' 명시",
+      desc: "성과 동사가 훌륭하게 자리 잡혀 있습니다. 다음 학기에는 여기서 한 걸음 더 나아가 탐구 결과물이 다른 교과목과 융합되는 '학문 간 연계'를 보여주세요.",
+      step: "<b>[작성 공식]</b> '2학년 물리 세특에서 다룬 전자기 개념을 3학년 미적분 세특의 수식 모델링과 연계하여 심화함' 형태의 연결고리 구축"
+    });
+  }
+
+  if (aPct < 25) {
+    plans.push({
+      title: `2. 학업역량(기초교과 심화) 보강: 대입 핵심 평가 과제`,
+      desc: "진로 프로젝트에 비해 기초 수학/과학/국어 과목의 원리 탐구 비중이 낮습니다. 대학은 '전공 지식' 이전에 '대학 공부를 따라올 기초 학업력'을 먼저 봅니다.",
+      step: "<b>[실천 가이드]</b> 주요 교과 세특에서 공식을 단순히 대입해 푼 수준을 넘어, '공식의 유도 및 증명 과정', '이론의 한계점 비판', '심화 문제 해결'을 수행평가 주제로 선정하세요."
+    });
+  } else if (cPct < 20) {
+    plans.push({
+      title: `2. 진로역량(전공 쐐기 박기) 보강: 핵심 추천 과제`,
+      desc: "목표 학과에 직결되는 전문 어휘와 구체적인 프로젝트 타이틀의 밀도가 낮습니다.",
+      step: "<b>[실천 가이드]</b> 진로선택과목(고급물리, 미적분, 경제수학, 인공지능 기초 등)에서 지원 희망 전공의 최신 학술 이슈를 직접 다룬 '1인 심화 연구 보고서'를 완성해 세특에 등재시키세요."
+    });
+  }
+
+  if (gPct !== undefined && gPct < 15) {
+    plans.push({
+      title: "3. 성장역량(자기주도·한계극복) 보완: '시행착오와 피드백 극복 스토리' 구축",
+      desc: "활동이 성공적인 결과만 나열되어 있어, 학생 스스로 문제를 맞닥뜨리고 극복해 나간 '성장 드라마'가 부족합니다.",
+      step: "<b>[실천 가이드]</b> 탐구 과정에서 부딪힌 오차나 가설 실패를 솔직히 기록하고, '초기 설계의 오차 원인을 스스로 분석하여 변인을 재조정함으로써 해결함'과 같은 자기주도적 문제해결 과정을 부각하세요."
+    });
+  }
+
+  if (validBooks.length < 2) {
+    plans.push({
+      title: "4. 배경 독서 이력 연계: '구글링 탐구'를 '학술 독서 탐구'로 격상",
+      desc: "생기부에 기호(『 』)로 표시된 전문 서적이 부족합니다. 입학사정관은 인터넷 검색 기반의 얕은 지식인지, 검증된 도서를 깊게 읽었는지를 정성 평가합니다.",
+      step: "<b>[실천 가이드]</b> 다음 학기 수행평가 제출 시, 반드시 전공 관련 권장 도서 1~2권을 인용하고 '『책 제목(저자)』을 탐독하고 책 속의 A 이론을 바탕으로 탐구를 확장함' 문구가 세특에 들어가도록 구성하세요."
+    });
+  }
+
+  if (mPct < 15 || !text.includes("갈등")) {
+    plans.push({
+      title: "5. 공동체 역량(협업/인성) 보완: '단순 착함' 대신 '갈등 조정 일화' 확보",
+      desc: "행특이나 자율활동이 '성실하고 예의 바름' 식의 모범생 평어에 머물러 있을 가능성이 높습니다.",
+      step: "<b>[실천 가이드]</b> 모둠 과제나 동아리 활동 중 '팀원 간 역할 불균형이나 의견 충돌이 발생했을 때, 내가 직접 경청하고 업무를 재조정하여 성공시킨 구체적 에피소드'를 교사에게 관찰되도록 행동하세요."
+    });
+  }
+
+  plans.forEach(p => {
+    container.innerHTML += `
+      <div class="guide-box">
+        <h3>${p.title}</h3>
+        <p>${p.desc}</p>
+        <div class="guide-step">${p.step}</div>
+      </div>
+    `;
+  });
+}
+
+// -------------------------------------------------------------
+// 강약점 심층 리포트
+// -------------------------------------------------------------
+function renderStrengthsAndWeaknesses(text, aPct, cPct, mPct, validBooks, gPct) {
+  const strengths = [];
+  const weaknesses = [];
+
+  const topicMatches = [...new Set([...text.matchAll(/['"]([^'"]{4,35})['"]/g)].map(m => m[1]))];
+  
+  const hasProof = text.includes("증명") || text.includes("유도") || text.includes("수식");
+  const hasExperiment = text.includes("실험") || text.includes("가설") || text.includes("오차");
+  const hasConflictResolution = text.includes("갈등") && (text.includes("조율") || text.includes("중재") || text.includes("경청"));
+  const hasPassiveWords = (text.match(/참여함|시청함|들음|학습함|체험함/g) || []).length;
+  const hasActiveWords = (text.match(/도출함|증명함|분석함|제시함|설계함|구현함|모델링함/g) || []).length;
+
+  if (hasProof) {
+    strengths.push(`<b>정밀한 수학·과학적 원리 유도 역량:</b> 개념을 단순히 암기하는 데 그치지 않고 수식 증명 및 원리 유도 과정을 서술했습니다. 지적 탐구의 집요함과 학업적 엄밀성을 인정받기 유리합니다.`);
+  } else if (hasExperiment) {
+    strengths.push(`<b>실증적 탐구 프로세스 완비:</b> '가설 설정 → 실험/데이터 수집 → 오차 원인 분석'의 과학적 탐구 단계가 세특에 구조적으로 안착되어 있어 자기주도적 문제해결력이 돋보입니다.`);
+  }
+
+  if (gPct !== undefined && gPct >= 25) {
+    strengths.push(`<b>탁월한 자기주도성과 성장 잠재력:</b> 난관이나 한계를 극복하고 스스로 피드백을 반영하여 연구를 확장해 나간 '성장역량'(${gPct}%) 키워드가 풍부하게 감지되었습니다. 사정관이 가장 신뢰하는 가파른 발전 곡선을 그리고 있습니다.`);
+  }
+
+  if (topicMatches.length >= 2) {
+    const sampleTopics = topicMatches.slice(0, 2).map(t => `'${t}'`).join(", ");
+    strengths.push(`<b>주제 중심의 주도적 연구 타이틀:</b> ${sampleTopics} 등 명확한 프로젝트 타이틀을 기반으로 활동을 전개하여, 독자적인 문제의식을 가진 탐구자로서의 실재성을 보여줍니다.`);
+  }
+
+  if (validBooks.length >= 1) {
+    const sampleBooks = validBooks.slice(0, 2).map(b => `『${b}』`).join(", ");
+    strengths.push(`<b>독서 기반 지식 확장:</b> ${sampleBooks} 등의 전문 서적을 탐구 배경 자료로 활용하여 세특의 학문적 깊이를 강화한 흔적이 명확히 드러납니다.`);
+  }
+
+  if (hasConflictResolution) {
+    strengths.push(`<b>실천적 갈등 조정과 협업 리더십:</b> 모둠 활동 중 의견 충돌이나 역할 배분 문제에 직면했을 때, 능동적 경청과 업무 재배치를 통해 공동의 결과물을 도출해 낸 협업 역량이 명시되어 있습니다.`);
+  }
+
+  if (strengths.length === 0) {
+    strengths.push(`<b>균형 잡힌 역량 분포:</b> 학업, 진로, 성장, 인성 영역이 한쪽으로 극단적 편중 없이 고르게 기재되어 있습니다.`);
+  }
+
+  if (hasPassiveWords > hasActiveWords) {
+    weaknesses.push(`<b>수동적 문장 서술 패턴(피동형 어미 과다):</b> '~에 참여함', '~를 시청함'과 같은 수동형 진술이 능동적 성과 동사보다 잦습니다. <i>'호기심 발단 → 주도적 자료 분석 → 독창적 결론 도출 → 배운 점'</i>의 인과 구조로 세특 서술을 전환해야 합니다.`);
+  }
+
+  if (validBooks.length === 0) {
+    weaknesses.push(`<b>학문적 심화를 뒷받침할 배경 독서 이력 누락:</b> 기호(『 』)로 명시된 전문 서적이 감지되지 않았습니다. 입학사정관은 구글링 수준의 자료 조사인지, 신뢰성 있는 도서/학술 자료를 탐독했는지를 면밀히 보므로 핵심 전공 서적 독서 기록을 세특에 반드시 보강하세요.`);
+  }
+
+  if (cPct > 55 && aPct < 20) {
+    weaknesses.push(`<b>기초 학업역량 대비 과도한 전공 편중:</b> 교과 본연의 학문적 원리 탐구(${aPct}%)보다 진로 프로젝트(${cPct}%)에 기록이 과도하게 쏠려 있습니다. 고교 수준에서는 기초 교과(수학, 과학, 국어)의 학업적 역량이 탄탄해야 전공 활동도 진정성을 인정받습니다.`);
+  }
+
+  if (gPct !== undefined && gPct < 15) {
+    weaknesses.push(`<b>자기주도적 극복 스토리(성장역량) 보완 필요:</b> 과제 수행 과정에서 직면한 문제점이나 시행착오를 어떻게 스스로 극복하고 발전시켰는지에 대한 서술(${gPct}%)이 부족합니다. 단순히 완성된 결과만 나열하기보다 '문제 인식 및 개선 노력'을 세특에 담아내세요.`);
+  }
+
+  if (!hasConflictResolution && mPct < 15) {
+    weaknesses.push(`<b>공동체 기여도의 구체성 부족:</b> '착하고 성실하며 적극적임' 식의 일반적 평어 위주이며, 팀 프로젝트 내에서 본인이 구체적으로 어떤 기여를 했는지, 의견 대립을 어떻게 풀었는지에 대한 일화가 부족합니다.`);
+  }
+
+  if (weaknesses.length === 0) {
+    weaknesses.push(`<b>면접 심층 검증 대비 필요:</b> 학생부의 구성과 완결성이 매우 우수합니다. 다만 탐구 수준이 높을수록 모의면접에서 면접관이 '수식의 유도 과정', '실험 변인의 통제 이유' 등을 집요하게 파고들 수 있으므로 보고서 원본 내용을 완벽히 숙지해야 합니다.`);
+  }
+
+  document.getElementById("strengthList").innerHTML = strengths.map(s => `<li>${s}</li>`).join("");
+  document.getElementById("weaknessList").innerHTML = weaknesses.map(w => `<li>${w}</li>`).join("");
+}
+
+// -------------------------------------------------------------
+// 샘플 데이터 및 리셋
+// -------------------------------------------------------------
+function loadSampleData() {
+  document.getElementById("studentText").value = 
+`[1학년 - 자율활동]
+학급 반장으로서 학기 초 구성원 간의 서먹한 분위기를 해소하기 위해 '학습 멘토-멘티 프로젝트'를 기획하고 운영함. 학업에 어려움을 겪는 친구들의 애로사항을 경청하고 조율하며 자율적인 스터디 문화를 조성함. 학교폭력예방 및 생명존중 자치활동에 주도적으로 참여함.
+
+[1학년 - 통합과학 세부능력 및 특기사항]
+'신소재의 분자 구조와 전기적 특성'을 주제로 탐구 발표를 진행함. 탄소나노튜브와 그래핀의 2차원 육각 격자 분자 구조를 학습하고 전도성 발현 원리를 수식으로 분석함. 관련 과학 다큐멘터리를 시청한 후 의문을 품고 도서 『나노 기술의 이해』를 탐독하며 차세대 반도체 배선 소재로서의 잠재력을 보고서로 작성함.
+
+[2학년 - 동아리활동]
+공학 학술동아리 기장으로서 '스마트 라인트레이서 및 회생제동 모빌리티 제작' 프로젝트를 총괄 주도함. 모터 드라이버와 센서 감도 간의 제어 충돌 문제가 발생하자, 모둠원들과 회로도를 다각도로 분석하여 디버깅을 성공시킴. 제작 일정 지연으로 인한 팀원 간의 역할 분담 갈등을 상호 의견 조율과 업무 재배치를 통해 원만히 해결함.
+
+[2학년 - 물리학Ⅰ 세부능력 및 특기사항]
+'스마트 모빌리티 회생제동 시스템의 전자기 유도 원리'를 주제로 심화 탐구 보고서를 완성함. 패러데이 전자기 유도 법칙의 수식 증명을 바탕으로 운동에너지가 전기에너지로 변환되는 효율을 수치적으로 도출함. 모의 회로 실험을 설계하여 코일 권선 수에 따른 유도 기전력의 오차 원인을 분석함. 도서 『모빌리티의 미래』를 읽고 배터리 충전 메커니즘을 비판적으로 고찰함.
+
+[2학년 - 미적분 세부능력 및 특기사항]
+순간 변화율과 도함수의 개념을 공학적 모델링에 접목함. 속도-시간 그래프의 정적분을 활용하여 차량 제동 시 발생하는 제동 거리와 에너지 손실 곡선을 수학적으로 모델링함. 탐구 결과를 물리학Ⅰ의 회생제동 연구와 연계하여 최적의 제동 곡선을 도출하고 보고서를 작성함.
+
+[2학년 - 진로활동]
+기계·자동차공학 연구원으로서의 진로 목표를 구체화함. 학과 멘토링 프로그램에 참여하여 최신 친환경 모빌리티 트렌드를 조사함. 미래 모빌리티 자율주행 알고리즘을 분석하고 시뮬레이션 프로그램을 구현해보며 전공 수학 의지를 확고히 함.
+
+[2학년 - 행동특성 및 종합의견]
+매사 솔선수범하며 높은 지적 호기심과 성실성을 겸비한 학생임. 학급 내 의견 대립이 발생할 때마다 중립적인 입장에서 양측의 주장을 경청하고 타협안을 제시하는 뛰어난 갈등 중재 능력을 보임. 자신의 학업적 성과를 친구들과 나누는 배려심이 돋보임.`;
+
+  document.getElementById("guideText").value = "";
+  runAnalysis();
+}
+
+function resetAll() {
+  document.getElementById("studentFile").value = "";
+  document.getElementById("guideFile").value = "";
+  document.getElementById("studentText").value = "";
+  document.getElementById("guideText").value = "";
+  document.getElementById("studentStatus").style.display = "none";
+  document.getElementById("guideStatus").style.display = "none";
+  document.getElementById("resultSection").style.display = "none";
+  document.getElementById("progressWrap").style.display = "none";
+  const pBanner = document.getElementById("privacyBanner");
+  if (pBanner) pBanner.style.display = "none";
+  const pTags = document.getElementById("privacyMetaTags");
+  if (pTags) pTags.innerHTML = "";
+  const recEl = document.getElementById("recommendContainer");
+  if (recEl) recEl.innerHTML = "";
+  lastAnalysisState = null;
+  lastDetectedMeta = null;
+  currentNeisSections = null;
+  currentSubjData = null;
+  currentNeisGrade = "all";
+  currentSubjGrade = "all";
+}
+
+function getFallbackDatabase() {
+  return {
+    "경희대학교": {
+      "evalRatio": { "academic": 40, "career": 40, "community": 20 },
+      "departments": {
+        "기계공학부 / 항공우주모빌리티전공 / 지능로봇공학전공": {
+          "category": "공학계열",
+          "coreSubjects": ["수학Ⅰ", "수학Ⅱ", "미적분", "기하", "물리학Ⅰ", "물리학Ⅱ"],
+          "optSubjects": ["화학Ⅰ", "확률과 통계"],
+          "keywords": ["역학", "설계", "동력", "시스템", "모빌리티", "융합적사고", "문제해결력"],
+          "guide": "역학 및 물리·수학적 기초를 바탕으로 시스템을 설계하고 문제를 해결하는 공학적 역량을 평가합니다."
+        },
+        "전자정보대학 (전자공학과 / 반도체공학과 / 생체의공학과)": {
+          "category": "공학계열",
+          "coreSubjects": ["수학Ⅰ", "수학Ⅱ", "미적분", "기하", "물리학Ⅰ", "물리학Ⅱ"],
+          "optSubjects": ["화학Ⅰ", "확률과 통계"],
+          "keywords": ["전자회로", "반도체소자", "신호처리", "하드웨어", "탐구력", "학업성취도"],
+          "guide": "전자 및 반도체 소자, 회로 시스템 이해를 위한 물리·수학적 탐구 깊이와 학업 성취 수준을 중점 점검합니다."
+        },
+        "소프트웨어융합대학 (컴퓨터공학과 / 인공지능학과 / 소프트웨어융합학과)": {
+          "category": "공학계열",
+          "coreSubjects": ["수학Ⅰ", "수학Ⅱ", "미적분", "기하"],
+          "optSubjects": ["확률과 통계", "인공지능 수학", "정보"],
+          "keywords": ["알고리즘", "데이터", "코딩", "프로그래밍", "소프트웨어", "논리적사고"],
+          "guide": "수학적 논리성을 바탕으로 복잡한 문제를 알고리즘으로 구조화하고 최적화하는 소프트웨어 역량을 평가합니다."
+        },
+        "생명과학대학 / 응용과학대학 (유전생명공학 / 식품생명공학 / 응용화학 등)": {
+          "category": "자연과학계열",
+          "coreSubjects": ["수학Ⅰ", "수학Ⅱ", "미적분", "화학Ⅰ", "화학Ⅱ", "생명과학Ⅰ", "생명과학Ⅱ"],
+          "optSubjects": ["확률과 통계", "기하"],
+          "keywords": ["생명현상", "분자수준이해", "실험설계", "가설검증", "화학생명기초"],
+          "guide": "화학 및 생명과학의 기초 위계 이수와 함께 실험 설계 및 데이터 분석을 통한 과학적 탐구력을 확인합니다."
+        },
+        "의예과 / 한의예과 / 치의예과 / 약학대학": {
+          "category": "의약학/보건계열",
+          "coreSubjects": ["수학Ⅰ", "수학Ⅱ", "미적분", "화학Ⅰ", "화학Ⅱ", "생명과학Ⅰ", "생명과학Ⅱ"],
+          "optSubjects": ["기하", "확률과 통계", "물리학Ⅰ"],
+          "keywords": ["생명존중", "인류애", "의학기초", "수리판단력", "생명윤리", "학업수월성"],
+          "guide": "자연과학 최고 수준의 기초 과목 이수 충실도와 생명에 대한 윤리의식, 의약학 분야의 학업 수월성을 평가합니다."
+        },
+        "정경대학 / 경영대학 (경영학과 / 경제학과 / 정치외교학과 등)": {
+          "category": "사회/상경계열",
+          "coreSubjects": ["수학Ⅰ", "수학Ⅱ", "확률과 통계", "경제"],
+          "optSubjects": ["미적분", "사회·문화", "정치와 법"],
+          "keywords": ["수리적분석", "시장예측", "데이터해석", "비즈니스", "사회현상분석", "합리적의사결정"],
+          "guide": "사회 및 경제·경영 현상을 수리·통계적 분석력을 바탕으로 해석하고 대안을 도출하는 능력을 평가합니다."
+        },
+        "문과대학 / 외국어대학 (국어국문 / 영어영문 / 사학 등)": {
+          "category": "인문계열",
+          "coreSubjects": ["국어", "영어", "사회·문화"],
+          "optSubjects": ["고전 읽기", "문학", "세계사", "윤리와 사상"],
+          "keywords": ["인문학적통찰", "텍스트분석", "비판적사고", "문화소양", "의사소통"],
+          "guide": "풍부한 독서와 인문학적 사유를 바탕으로 한 텍스트 해석 능력 및 문화·예술적 소양을 종합 평가합니다."
+        }
+      }
+    },
+    "서울대학교": {
+      "evalRatio": { "academic": 50, "career": 30, "community": 20 },
+      "departments": {
+        "수리과학부 / 통계학과": {
+          "category": "자연과학계열",
+          "coreSubjects": ["미적분", "확률과 통계", "기하"],
+          "optSubjects": [],
+          "keywords": ["수학적수월성", "논리적엄밀성", "추상적사고", "학문적열정", "지적도전", "탐구력"],
+          "guide": "수학 교과 전반(미적분, 확통, 기하)의 필수 이수 및 깊이 있는 학업 역량과 수리적 탐구 깊이를 집중 평가합니다."
+        },
+        "물리학전공 / 천문학전공 / 화학부": {
+          "category": "자연과학계열",
+          "coreSubjects": ["미적분", "기하", "물리학Ⅱ", "화학Ⅱ"],
+          "optSubjects": ["확률과 통계"],
+          "keywords": ["기초과학수월성", "수학적모델링", "실험탐구역량", "지적호기심", "분자수준이해"],
+          "guide": "자연과학 기초 과학 II 과목 및 심화 수학의 단계적 이수와 현상에 대한 모델링 및 탐구력을 평가합니다."
+        },
+        "생명과학부 / 의예과": {
+          "category": "의약학/보건계열",
+          "coreSubjects": ["미적분", "생명과학Ⅱ"],
+          "optSubjects": ["화학Ⅱ", "확률과 통계", "기하"],
+          "keywords": ["생명현상이해", "실험설계", "생명존중", "수리적판단력", "탐구지속성"],
+          "guide": "생명과학 II와 미적분의 충실한 이수를 기본으로 유기적 학업 성취도 및 생명 과학적 소양을 평가합니다."
+        },
+        "기계공학부 / 전기·정보공학부": {
+          "category": "공학계열",
+          "coreSubjects": ["미적분", "기하", "물리학Ⅱ"],
+          "optSubjects": ["확률과 통계", "화학Ⅰ"],
+          "keywords": ["역학기초", "공학수학", "시스템설계", "문제해결력", "도전정신", "전자기학"],
+          "guide": "물리학 II와 미적분, 기하 등 공학 이수에 필수적인 핵심 과목의 이수와 학업 성취 수준을 중점 평가합니다."
+        },
+        "컴퓨터공학부": {
+          "category": "공학계열",
+          "coreSubjects": ["미적분", "확률과 통계"],
+          "optSubjects": ["기하"],
+          "keywords": ["알고리즘", "이산구조", "수학적논리", "컴퓨팅사고", "소프트웨어개발"],
+          "guide": "컴퓨팅 이론과 알고리즘 설계를 뒷받침하는 미적분 및 확률과 통계 교과의 기초 학업역량을 평가합니다."
+        },
+        "경제학부 / 경영대학": {
+          "category": "사회/상경계열",
+          "coreSubjects": [],
+          "optSubjects": ["미적분", "확률과 통계"],
+          "keywords": ["수리적분석", "경제이론", "데이터해석", "학업수월성", "지적호기심", "논리력"],
+          "guide": "경제 및 경영학 수학에 기초가 되는 미적분과 확률과 통계의 이수 여부 및 심화 학업성취도를 평가합니다."
+        }
+      }
+    },
+    "연세대학교": {
+      "evalRatio": { "academic": 40, "career": 30, "community": 30 },
+      "departments": {
+        "공과대학 (기계공학부 / 전기전자공학부 / 화공생명공학부 등)": {
+          "category": "공학계열",
+          "coreSubjects": ["수학Ⅰ", "수학Ⅱ", "미적분", "기하", "물리학Ⅰ"],
+          "optSubjects": ["물리학Ⅱ", "화학Ⅰ", "확률과 통계"],
+          "keywords": ["학업역량", "진로역량", "공동체역량", "탐구력", "학업성취도", "전공적합성"],
+          "guide": "수학과 과학(물리, 화학 등)의 위계에 따른 충실한 이수 및 심화 탐구 능력을 바탕으로 한 학업적 발전 가능성을 종합 평가합니다."
+        },
+        "인공지능융합대학 (컴퓨터과학과 / 인공지능학과 / 지능형반도체전공 등)": {
+          "category": "공학계열",
+          "coreSubjects": ["수학Ⅰ", "수학Ⅱ", "미적분", "기하", "확률과 통계"],
+          "optSubjects": ["정보", "인공지능 수학", "물리학Ⅰ"],
+          "keywords": ["컴퓨팅사고", "알고리즘", "학업역량", "진로역량", "융합적탐구"],
+          "guide": "첨단 IT 및 AI 분야의 기초가 되는 수학적 엄밀성과 컴퓨팅 사고력, 신설 첨단 학과에 대한 융합적 탐구 역량을 집중 평가합니다."
+        },
+        "의과대학 / 치과대학 / 약학대학": {
+          "category": "의약학/보건계열",
+          "coreSubjects": ["수학Ⅰ", "수학Ⅱ", "미적분", "화학Ⅰ", "생명과학Ⅰ"],
+          "optSubjects": ["화학Ⅱ", "생명과학Ⅱ", "기하"],
+          "keywords": ["생명존중", "학업성취도", "탐구력", "진로역량", "공동체역량"],
+          "guide": "최고 수준의 기초 과학 및 수학 학업 역량과 더불어 생명과학·화학 분야의 심화 탐구 및 의료인으로서의 인성을 평가합니다."
+        },
+        "경영대학 / 상경대학 (경영학과 / 경제학부 / 응용통계학과)": {
+          "category": "사회/상경계열",
+          "coreSubjects": ["수학Ⅰ", "수학Ⅱ", "확률과 통계", "국어", "영어"],
+          "optSubjects": ["미적분", "경제", "사회·문화"],
+          "keywords": ["수리적분석", "데이터해석", "학업역량", "진로역량", "논리적사고"],
+          "guide": "상경·사회계열 수학능력을 뒷받침하는 수리적 분석력과 경제·사회 현상에 대한 비판적 탐구 역량을 평가합니다."
+        },
+        "문과대학 / 사회과학대학 (국어국문 / 정치외교 / 행정 등)": {
+          "category": "인문계열",
+          "coreSubjects": ["국어", "영어", "사회·문화", "정치와 법"],
+          "optSubjects": ["고전 읽기", "사회문제 탐구", "세계사"],
+          "keywords": ["인문학적소양", "텍스트분석", "비판적사고", "학업역량", "소통능력"],
+          "guide": "인문·사회 분야의 깊이 있는 텍스트 독해력과 논리적 소통 능력, 사회 현상에 대한 통찰력을 종합 평가합니다."
+        }
+      }
+    },
+    "고려대학교": {
+      "evalRatio": { "academic": 50, "career": 30, "community": 20 },
+      "departments": {
+        "공과대학 / 이과대학 (기계공학부 / 전기전자공학부 / 화공생명공학과 등)": {
+          "category": "공학계열",
+          "coreSubjects": ["수학Ⅰ", "수학Ⅱ", "미적분", "기하", "물리학Ⅰ", "화학Ⅰ"],
+          "optSubjects": ["물리학Ⅱ", "화학Ⅱ", "확률과 통계"],
+          "keywords": ["학업역량", "교과이수충실도", "자기계발역량", "탐구력", "공동체역량", "성실성"],
+          "guide": "지원 계열 수학 및 과학 교과의 위계적 이수 노력과 심화 탐구 능력을 바탕으로 한 학업적 우수성을 집중 평가합니다."
+        },
+        "경영대학 / 정경대학 (경영학과 / 경제학과 / 정치외교학과 등)": {
+          "category": "사회/상경계열",
+          "coreSubjects": ["수학Ⅰ", "수학Ⅱ", "확률과 통계", "국어", "영어"],
+          "optSubjects": ["미적분", "경제", "사회·문화"],
+          "keywords": ["학업역량", "자기계발역량", "교과이수충실도", "공동체역량", "수리적분석"],
+          "guide": "인문·상경계열 교과 이수 충실도와 수리적 분석력, 사회 현상에 대한 주도적 탐구 역량을 종합 평가합니다."
+        },
+        "생명과학대학 / 보건과학대학": {
+          "category": "자연과학계열",
+          "coreSubjects": ["수학Ⅰ", "수학Ⅱ", "미적분", "화학Ⅰ", "생명과학Ⅰ"],
+          "optSubjects": ["화학Ⅱ", "생명과학Ⅱ", "확률과 통계"],
+          "keywords": ["생명과학역량", "실험탐구", "학업역량", "자기계발역량", "공동체역량"],
+          "guide": "생명과학 및 화학 교과의 충실한 이수와 생명 현상에 대한 탐구 심화도 및 실험 수행 능력을 중점 평가합니다."
+        },
+        "의과대학 / 간호대학": {
+          "category": "의약학/보건계열",
+          "coreSubjects": ["수학Ⅰ", "수학Ⅱ", "미적분", "화학Ⅰ", "화학Ⅱ", "생명과학Ⅰ", "생명과학Ⅱ"],
+          "optSubjects": ["확률과 통계", "기하"],
+          "keywords": ["생명존중", "학업역량", "자기계발역량", "공동체역량", "의학기초"],
+          "guide": "최고 수준의 과학·수학 학업 성취도와 의료인으로서의 인성, 생명 윤리 및 공동체 의식을 정밀 평가합니다."
+        },
+        "사범대학 (국어교육 / 영어교육 / 수학교육 등)": {
+          "category": "사범/교육",
+          "coreSubjects": ["전공 관련 교과 전 과목", "국어", "수학", "영어"],
+          "optSubjects": ["교육학", "심리학", "독서"],
+          "keywords": ["교직관", "학습자이해", "학업역량", "자기계발역량", "공동체역량"],
+          "guide": "예비 교사로서의 전공 교과 이수 충실도 및 교육적 소명감, 공동체 협력 및 리더십 역량을 평가합니다."
+        }
+      }
+    },
+    "성균관대학교": {
+      "evalRatio": { "academic": 40, "career": 40, "community": 20 },
+      "departments": {
+        "공학계열 / 전자전기정보공학부 / 반도체시스템공학과": {
+          "category": "공학계열",
+          "coreSubjects": ["수학Ⅰ", "수학Ⅱ", "미적분", "기하", "물리학Ⅰ"],
+          "optSubjects": ["물리학Ⅱ", "화학Ⅰ", "확률과 통계"],
+          "keywords": ["학업수월성", "탐구주도성", "탐구확장성", "공학기초", "문제해결력", "회로설계", "창의리더"],
+          "guide": "수학 및 물리 교과의 심화 이수와 학업 성취도를 바탕으로 지적 호기심과 문제해결력을 발휘하여 공학적 난제를 주도적으로 탐구한 역량을 평가합니다."
+        },
+        "소프트웨어융합 / 컴퓨터공학과 / 지능형소프트웨어학과 / 인공지능학과": {
+          "category": "공학계열",
+          "coreSubjects": ["수학Ⅰ", "수학Ⅱ", "미적분", "확률과 통계"],
+          "optSubjects": ["기하", "정보", "인공지능 수학"],
+          "keywords": ["컴퓨팅사고", "알고리즘", "논리적사고", "탐구주도성", "지적호기심", "데이터해석"],
+          "guide": "수학적 논리력과 컴퓨팅 사고력을 기반으로 소프트웨어, 인공지능 분야의 알고리즘 및 데이터 분석에 대한 깊이 있는 탐구 경험을 집중 평가합니다."
+        },
+        "자연과학계열 / 배터리학과 / 반도체융합공학과 / 에너지학과": {
+          "category": "자연과학계열",
+          "coreSubjects": ["수학Ⅰ", "수학Ⅱ", "미적분", "물리학Ⅰ", "화학Ⅰ"],
+          "optSubjects": ["물리학Ⅱ", "화학Ⅱ", "기하", "확률과 통계"],
+          "keywords": ["기초과학역량", "실험탐구", "탐구확장성", "분자수준이해", "학업충실성", "도전정신"],
+          "guide": "수학과 기초 과학(물리, 화학)의 단계적 위계 이수와 실험 및 과제 수행 과정에서 나타난 과학적 탐구력과 성취도를 종합 평가합니다."
+        },
+        "의예과 / 약학과 / 글로벌바이오메디컬공학과": {
+          "category": "의약학/보건계열",
+          "coreSubjects": ["수학Ⅰ", "수학Ⅱ", "미적분", "화학Ⅰ", "생명과학Ⅰ"],
+          "optSubjects": ["화학Ⅱ", "생명과학Ⅱ", "기하", "확률과 통계"],
+          "keywords": ["생명존중", "학업수월성", "의약학소양", "공동체의식", "탐구주도성", "생명윤리", "이타성"],
+          "guide": "화학·생명과학 중심의 탁월한 학업 수월성과 더불어 생명 현상에 대한 심층적 탐구 열정, 의료인·연구자로서의 따뜻한 공동체의식을 정밀 평가합니다."
+        },
+        "사회과학계열 / 경영학과 / 글로벌경영 / 글로벌경제": {
+          "category": "사회/상경계열",
+          "coreSubjects": ["수학Ⅰ", "수학Ⅱ", "확률과 통계", "국어", "영어"],
+          "optSubjects": ["미적분", "경제", "사회·문화"],
+          "keywords": ["수리적분석", "경제적사고", "데이터해석", "글로벌소양", "미래성장성", "합리적의사결정", "리더십"],
+          "guide": "사회·경제 현상을 통계 및 수리적 분석력을 토대로 비판적으로 해석하고 합리적 대안을 제시하는 탐구 주도성과 리더십을 평가합니다."
+        },
+        "인문과학계열 / 글로벌리더학부 / 유학·동양학과": {
+          "category": "인문계열",
+          "coreSubjects": ["국어", "영어", "사회·문화", "윤리와 사상"],
+          "optSubjects": ["고전 읽기", "세계사", "정치와 법", "한문Ⅰ"],
+          "keywords": ["인문학적통찰", "텍스트분석", "비판적사고", "공동체의식", "소통능력", "철학적사유"],
+          "guide": "깊이 있는 텍스트 독해와 인문학적 사유 능력, 인간과 사회에 대한 다각적 통찰 및 열린 의사소통 역량을 종합 평가합니다."
+        },
+        "자유전공계열": {
+          "category": "자율/융합",
+          "coreSubjects": ["국어", "수학", "영어", "통합사회", "통합과학"],
+          "optSubjects": ["수학Ⅰ", "수학Ⅱ", "사회·문화", "생활과 윤리", "과학탐구실험"],
+          "keywords": ["학업수월성", "탐구확장성", "자기주도성", "융합적사고", "미래성장성", "도전적선택"],
+          "guide": "전 계열에 걸친 균형 잡힌 학업 성취도와 전공의 경계를 허물며 스스로 관심 분야를 확장해 나가는 자기주도적 융합 탐구 역량을 중점 평가합니다."
+        }
+      }
+    },
+    "충남대학교": {
+      "evalRatio": { "academic": 40, "career": 36, "community": 24 },
+      "departments": {
+        "기계공학부 / 항공우주 / 자율운항시스템": {
+          "category": "공학계열",
+          "coreSubjects": ["수학Ⅰ", "수학Ⅱ", "미적분", "물리학Ⅰ", "물리학Ⅱ"],
+          "optSubjects": ["기하", "공학 일반"],
+          "keywords": ["역학적사고", "공학기초", "수식모델링", "문제해결력", "도전정신", "자기주도성", "설계"],
+          "guide": "물리학Ⅱ와 미적분·기하의 단계적 이수 충실도와 공학 메커니즘 분석 및 실험 설계 능력을 집중 평가합니다."
+        },
+        "전기공학과 / 전자공학과 / 정보통신융합학부": {
+          "category": "공학계열",
+          "coreSubjects": ["수학Ⅰ", "수학Ⅱ", "미적분", "물리학Ⅰ", "물리학Ⅱ"],
+          "optSubjects": ["기하", "확률과 통계", "화학Ⅰ"],
+          "keywords": ["전자회로", "신호처리", "물리이수충실도", "수학적역량", "소자분석", "창의융합", "기술혁신"],
+          "guide": "전기전자 하드웨어 및 신호 체계에 대한 수학·물리학적 원리 탐구와 심화 성취도를 평가합니다."
+        },
+        "컴퓨터인공지능학부": {
+          "category": "공학계열",
+          "coreSubjects": ["수학Ⅰ", "수학Ⅱ", "미적분", "확률과 통계"],
+          "optSubjects": ["기하", "인공지능 기초", "정보"],
+          "keywords": ["알고리즘", "데이터사이언스", "수학적논리", "컴퓨팅사고", "SW역량", "문제해결력", "융복합"],
+          "guide": "수학적 논리성을 바탕으로 알고리즘을 설계하고 데이터 구조를 최적화한 실천적 코딩 및 탐구 경험을 봅니다."
+        },
+        "신소재공학과 / 응용화학공학과 / 유기재료공학과": {
+          "category": "공학계열",
+          "coreSubjects": ["수학Ⅰ", "수학Ⅱ", "미적분", "화학Ⅰ", "화학Ⅱ", "물리학Ⅰ"],
+          "optSubjects": ["물리학Ⅱ", "기하"],
+          "keywords": ["물질연구", "반응메커니즘", "소재물성", "화학Ⅱ성취도", "실험탐구", "열역학", "분자구조"],
+          "guide": "화학Ⅱ 및 물리 과목의 위계적 이수와 결합 구조, 반응 속도론에 기반한 소재 합성 탐구력을 중시합니다."
+        },
+        "수학과 / 정보통계학과 / 물리학과 / 화학과": {
+          "category": "자연과학계열",
+          "coreSubjects": ["수학Ⅰ", "수학Ⅱ", "미적분", "확률과 통계", "물리학Ⅰ", "화학Ⅰ"],
+          "optSubjects": ["기하", "물리학Ⅱ", "화학Ⅱ"],
+          "keywords": ["기초과학역량", "수학적엄밀성", "원리유도", "통계해석", "지적호기심", "심화탐구", "학문적열의"],
+          "guide": "자연과학 기초 과목의 단계적 이수 충실도와 수식 유도, 오차 분석 등 엄밀한 학문적 탐구 태도를 평가합니다."
+        },
+        "의예과": {
+          "category": "의약학/보건계열",
+          "coreSubjects": ["수학Ⅰ", "수학Ⅱ", "미적분", "화학Ⅰ", "화학Ⅱ", "생명과학Ⅰ", "생명과학Ⅱ"],
+          "optSubjects": ["기하", "확률과 통계", "고급 생명과학"],
+          "keywords": ["생명존중", "인류애", "의학기초", "생명과학수월성", "수리판단력", "생명윤리", "자기주도학습"],
+          "guide": "화학·생명과학Ⅱ의 최고 수준 학업성취도와 생명에 대한 윤리의식, 서류 진실성 검증을 정밀하게 수행합니다."
+        },
+        "약학과 / 수의예과 / 간호학과": {
+          "category": "의약학/보건계열",
+          "coreSubjects": ["화학Ⅰ", "화학Ⅱ", "생명과학Ⅰ", "생명과학Ⅱ", "수학Ⅰ", "수학Ⅱ"],
+          "optSubjects": ["미적분", "확률과 통계", "기하"],
+          "keywords": ["약물기전", "동물생명", "돌봄배려", "임상탐구", "생명존중", "정밀분석", "공동체의식"],
+          "guide": "화학 및 생명과학 전 영역의 충실한 이수 여부와 보건의료인으로서의 책임감, 배려와 나눔의 실천력을 확인합니다."
+        },
+        "농업생명과학대학 (식물/원예/산림/응용생물/동물자원 등)": {
+          "category": "자연과학계열",
+          "coreSubjects": ["생명과학Ⅰ", "화학Ⅰ", "수학Ⅰ", "수학Ⅱ"],
+          "optSubjects": ["생명과학Ⅱ", "화학Ⅱ", "사회문제 탐구"],
+          "keywords": ["생물자원", "스마트팜", "생태환경", "바이오소재", "실험설계", "지속가능성", "영농창업"],
+          "guide": "농생명 기초 바이오 및 화학 역량과 함께 식량안보·환경생태 문제에 대한 주도적 탐구 의지를 평가합니다."
+        },
+        "경영학부 / 경제학과 / 무역학과": {
+          "category": "사회/상경계열",
+          "coreSubjects": ["수학Ⅰ", "수학Ⅱ", "확률과 통계", "경제"],
+          "optSubjects": ["경제 수학", "미적분", "사회·문화"],
+          "keywords": ["수리분석", "시장예측", "데이터해석", "비즈니스", "글로벌마인드", "합리적의사결정", "통계"],
+          "guide": "경제 및 경영 현상에 대한 수리·통계적 분석 역량과 정량적 데이터 기반의 문제 해결 태도를 평가합니다."
+        },
+        "행정학부 / 정치외교학과 / 사회학과 / 심리학과": {
+          "category": "사회/상경계열",
+          "coreSubjects": ["국어", "사회·문화", "정치와 법"],
+          "optSubjects": ["사회문제 탐구", "심리학", "생활과 윤리"],
+          "keywords": ["공공성", "정책이해", "사회구조분석", "비판적사고", "시민윤리", "의사소통", "공동체기여"],
+          "guide": "사회 현안과 인간 행동에 대한 다각적 분석력 및 공공 가치 실현을 위한 대안 제시 능력을 중점 평가합니다."
+        },
+        "사범대학 (국어/영어/수학/기술/공학교육)": {
+          "category": "사범/교육",
+          "coreSubjects": ["전공 관련 교과 전 과목", "독서", "수학Ⅰ", "수학Ⅱ"],
+          "optSubjects": ["교육학", "심리학", "미적분"],
+          "keywords": ["교직관", "교수학습역량", "멘토링", "학습자이해", "전공교과우수", "소통능력", "교육철학"],
+          "guide": "해당 전공 교과의 탄탄한 학업 수월성과 더불어 학생을 배려하고 지도할 수 있는 교육적 자질을 검증합니다."
+        },
+        "자율전공융합학부 (무전공 통합선발)": {
+          "category": "자율/융합",
+          "coreSubjects": ["국어", "수학", "영어", "통합사회", "통합과학"],
+          "optSubjects": ["독서", "수학Ⅰ", "수학Ⅱ", "사회·문화", "생활과 윤리", "과학탐구실험"],
+          "keywords": ["자기주도성", "다학제융합", "학업성취도", "폭넓은탐구", "도전정신", "창의융합", "문제해결"],
+          "guide": "단일 전공 지식보다는 기초 교과 전반의 학업 수행 역량과 융합적 호기심, 자율적 진로 설계 잠재력을 평가합니다."
+        }
+      }
+    },
+    "한양대학교": {
+      "evalRatio": { "academic": 50, "career": 30, "community": 20 },
+      "departments": {
+        "융합전자공학부 / 컴퓨터소프트웨어학부 / 반도체공학과": {
+          "category": "공학계열",
+          "coreSubjects": ["수학Ⅰ", "수학Ⅱ", "미적분", "기하", "물리학Ⅰ"],
+          "optSubjects": ["물리학Ⅱ", "확률과 통계", "정보"],
+          "keywords": ["학업역량", "탐구력", "컴퓨팅사고", "문제해결력", "회로설계", "논리적사고", "지적호기심"],
+          "guide": "수학과 물리학 교과의 위계적 이수 및 심화 탐구 능력을 중심으로 첨단 IT·반도체 분야에 필요한 학업적 잠재력과 문제해결력을 정성 종합 평가합니다."
+        },
+        "신소재공학부 / 화학공학과 / 기계공학부": {
+          "category": "공학계열",
+          "coreSubjects": ["수학Ⅰ", "수학Ⅱ", "미적분", "기하", "물리학Ⅰ"],
+          "optSubjects": ["물리학Ⅱ", "화학Ⅰ", "화학Ⅱ", "확률과 통계"],
+          "keywords": ["학업성취도", "역학기초", "분자구조", "실험탐구", "공학설계", "창의적문제해결", "성실성"],
+          "guide": "공학 기초가 되는 수학 및 물리·화학의 탄탄한 이수 충실도와 실험·설계 중심의 자기주도적 탐구 과정을 평가합니다."
+        },
+        "의예과": {
+          "category": "의약학/보건계열",
+          "coreSubjects": ["수학Ⅰ", "수학Ⅱ", "미적분", "화학Ⅰ", "생명과학Ⅰ"],
+          "optSubjects": ["화학Ⅱ", "생명과학Ⅱ", "기하", "확률과 통계"],
+          "keywords": ["생명존중", "학업수월성", "의학기초소양", "비판적사고", "윤리의식", "공동체역량", "소통능력"],
+          "guide": "자연과학 및 수리 영역에서의 최상위 학업 역량과 생명 현상에 대한 깊이 있는 탐구력, 의료인으로서의 인성과 윤리성을 정밀 평가합니다."
+        },
+        "경영학부 / 경제금융학부 / 파이낸스경영학과": {
+          "category": "사회/상경계열",
+          "coreSubjects": ["수학Ⅰ", "수학Ⅱ", "확률과 통계", "국어", "영어"],
+          "optSubjects": ["미적분", "경제", "사회·문화"],
+          "keywords": ["수리적분석", "데이터해석", "경제적사고", "의사결정", "비즈니스소양", "리더십", "협업능력"],
+          "guide": "상경·금융 분야 학습에 필요한 수리적 분석력과 경제 및 사회 현상을 비판적으로 바라보고 대안을 모색하는 탐구 역량을 평가합니다."
+        },
+        "정책학과 / 행정학과 / 미디어커뮤니케이션학과": {
+          "category": "사회/상경계열",
+          "coreSubjects": ["국어", "영어", "사회·문화", "정치와 법"],
+          "optSubjects": ["경제", "사회문제 탐구", "윤리와 사상"],
+          "keywords": ["공공가치", "텍스트분석", "논리적사고", "사회통찰", "비판적사고", "의사소통", "리더십"],
+          "guide": "인문·사회 영역의 깊이 있는 텍스트 독해력과 논리적 소통 역량, 사회 제도 및 현상에 대한 통찰력을 종합 평가합니다."
+        },
+        "한양인터칼리지학부 (자연 / 인문)": {
+          "category": "자율/융합",
+          "coreSubjects": ["수학Ⅰ", "수학Ⅱ", "국어", "영어"],
+          "optSubjects": ["미적분", "확률과 통계", "통합과학", "통합사회"],
+          "keywords": ["지식융합", "자기주도성", "도전정신", "다학제적사고", "문제해결력", "글로벌역량", "성찰적태도"],
+          "guide": "전공 자율 선택 학부의 특성에 맞춰 특정 영역에 치우치지 않는 균형 잡힌 학업 성취도와 자기주도적 융합 탐구 역량을 집중 평가합니다."
+        }
+      }
+    },
+    "한양대학교(ERICA)": {
+      "evalRatio": { "academic": 40, "career": 40, "community": 20 },
+      "departments": {
+        "공학대학 (기계공학과 / 전자공학부 / 로봇공학과 / 배터리소재화학공학과 등)": {
+          "category": "공학계열",
+          "coreSubjects": ["수학Ⅰ", "수학Ⅱ", "미적분", "물리학Ⅰ"],
+          "optSubjects": ["기하", "물리학Ⅱ", "화학Ⅰ", "확률과 통계"],
+          "keywords": ["학업역량", "진로역량", "공동체역량", "공학기초", "IC-PBL", "문제해결력", "실험탐구"],
+          "guide": "수학 및 물리·화학 중심의 기초 교과 성취도와 기계, 전자, 로봇, 배터리 등 첨단 산업 분야와 연계된 문제해결 역량을 종합 평가합니다."
+        },
+        "소프트웨어융합대학 (컴퓨터학부 / 인공지능학과 / ICT융합학부)": {
+          "category": "공학계열",
+          "coreSubjects": ["수학Ⅰ", "수학Ⅱ", "미적분", "확률과 통계"],
+          "optSubjects": ["기하", "정보", "인공지능 수학"],
+          "keywords": ["컴퓨팅사고", "알고리즘", "소프트웨어", "클라우드", "데이터분석", "자기주도성"],
+          "guide": "수학적 논리성을 바탕으로 한 알고리즘 설계 능력, 프로그래밍 및 인공지능·클라우드 분야에 대한 탐구 경험을 평가합니다."
+        },
+        "첨단융합대학 (차세대반도체융합공학부 / 바이오신약융합학부)": {
+          "category": "공학계열",
+          "coreSubjects": ["수학Ⅰ", "수학Ⅱ", "미적분", "화학Ⅰ", "생명과학Ⅰ"],
+          "optSubjects": ["물리학Ⅰ", "화학Ⅱ", "생명과학Ⅱ", "기하"],
+          "keywords": ["반도체소재", "신약개발", "바이오나노", "융합적탐구", "학업성취도", "실험설계"],
+          "guide": "반도체, 디스플레이 및 바이오 신약 분야의 학문적 기초가 되는 화학, 생명과학, 물리학 교과의 이수 충실도와 융합적 탐구 역량을 평가합니다."
+        },
+        "약학대학 (약학과)": {
+          "category": "의약학/보건계열",
+          "coreSubjects": ["수학Ⅰ", "수학Ⅱ", "미적분", "화학Ⅰ", "화학Ⅱ", "생명과학Ⅰ", "생명과학Ⅱ"],
+          "optSubjects": ["확률과 통계", "기하", "물리학Ⅰ"],
+          "keywords": ["생명존중", "학업수월성", "의약학기초", "분자생물학", "실험탐구", "생명윤리"],
+          "guide": "화학 및 생명과학 중심의 심화 교과 이수 성취도와 의약학 연구자로서의 과학적 탐구력 및 윤리의식을 집중 평가합니다."
+        },
+        "경상대학 (경영학부 / 경제학부 / 보험계리학과 / 회계세무학과)": {
+          "category": "사회/상경계열",
+          "coreSubjects": ["수학Ⅰ", "수학Ⅱ", "확률과 통계", "국어", "영어"],
+          "optSubjects": ["미적분", "경제", "사회·문화"],
+          "keywords": ["수리분석력", "경제이해", "데이터해석", "비즈니스사고", "합리적의사결정", "리더십"],
+          "guide": "수리적 분석력과 통계적 감각, 경제 및 기업 경영 현상에 대한 비판적 이해와 논리적 탐구 노력을 평가합니다."
+        },
+        "커뮤니케이션&컬처대학 / 글로벌문화통상대학 (광고홍보 / 문화콘텐츠 / 글로벌문화통상)": {
+          "category": "사회/상경계열",
+          "coreSubjects": ["국어", "영어", "사회·문화"],
+          "optSubjects": ["미디어 커뮤니케이션", "세계사", "독서", "문화 일반"],
+          "keywords": ["콘텐츠기획", "커뮤니케이션", "문화적통찰", "글로벌소양", "스토리텔링", "창의적표현"],
+          "guide": "다양한 문화 및 미디어 환경에 대한 인문사회적 통찰과 창의적 기획력, 타인과의 전략적 소통 능력을 종합 평가합니다."
+        },
+        "LIONS칼리지 (LIONS자율전공학부 전계열 / 자연 / 인문사회)": {
+          "category": "자율/융합",
+          "coreSubjects": ["국어", "수학", "영어", "통합사회", "통합과학"],
+          "optSubjects": ["수학Ⅰ", "수학Ⅱ", "사회·문화", "생활과 윤리", "과학탐구실험"],
+          "keywords": ["자기주도성", "다학제적사고", "진로설계", "융합역량", "학업성실성", "도전정신"],
+          "guide": "특정 전공에 국한되지 않고 전 교과를 성실하게 이수한 학업적 기초와 자기주도적으로 진로를 탐색하고 융합할 수 있는 잠재력을 중점 평가합니다."
+        }
+      }
+    },
+    "중앙대학교": {
+      "evalRatio": { "academic": 50, "career": 30, "community": 20 },
+      "departments": {
+        "공과대학 / 창의ICT공과대학 (기계공학부 / 전자전기공학부 등)": {
+          "category": "공학계열",
+          "coreSubjects": ["수학Ⅰ", "수학Ⅱ", "미적분", "기하", "물리학Ⅰ", "물리학Ⅱ"],
+          "optSubjects": ["화학Ⅰ", "확률과 통계"],
+          "keywords": ["학업역량", "진로역량", "공동체역량", "탐구력", "학업성취도", "전공적합성", "문제해결력"],
+          "guide": "수학과 물리학 등 공학 기초 과목의 핵심 및 권장 과목 이수와 심화 탐구 능력을 바탕으로 한 학업역량과 진로역량을 종합 평가합니다."
+        },
+        "소프트웨어대학 (소프트웨어학부 / AI학과)": {
+          "category": "공학계열",
+          "coreSubjects": ["수학Ⅰ", "수학Ⅱ", "미적분", "확률과 통계"],
+          "optSubjects": ["기하", "인공지능 수학", "정보"],
+          "keywords": ["학업역량", "진로역량", "공동체역량", "컴퓨팅사고", "알고리즘", "탐구력", "자기주도성"],
+          "guide": "소프트웨어 및 인공지능 분야의 기초가 되는 수학과 정보 교과의 충실한 이수 및 컴퓨팅 사고력을 집중 평가합니다."
+        },
+        "경영경제대학 (경영학부 / 경제학부 등)": {
+          "category": "사회/상경계열",
+          "coreSubjects": ["수학Ⅰ", "수학Ⅱ", "확률과 통계", "국어", "영어"],
+          "optSubjects": ["미적분", "경제", "사회·문화"],
+          "keywords": ["학업역량", "진로역량", "공동체역량", "수리적분석", "경제적사고", "데이터해석", "문제해결"],
+          "guide": "상경·경제계열 학습을 위한 수리적 분석력과 경제 현상에 대한 깊이 있는 탐구 및 리더십을 평가합니다."
+        },
+        "인문대학 / 사회과학대학 (국어국문학부 / 정치국제학과 등)": {
+          "category": "인문계열",
+          "coreSubjects": ["국어", "영어", "사회·문화", "정치와 법"],
+          "optSubjects": ["문학", "독서", "세계사", "윤리와 사상"],
+          "keywords": ["학업역량", "진로역량", "공동체역량", "인문학적통찰", "텍스트분석", "의사소통", "비판적사고"],
+          "guide": "인문·사회 분야의 깊이 있는 독해력, 비판적 사고력 및 공동체 소통 능력을 종합 평가합니다."
+        },
+        "의학부 / 약학부": {
+          "category": "의약학/보건계열",
+          "coreSubjects": ["수학Ⅰ", "수학Ⅱ", "미적분", "화학Ⅰ", "화학Ⅱ", "생명과학Ⅰ", "생명과학Ⅱ"],
+          "optSubjects": ["기하", "확률과 통계", "물리학Ⅰ"],
+          "keywords": ["학업역량", "진로역량", "공동체역량", "생명존중", "학업성취도", "탐구력", "의학적소양"],
+          "guide": "의약학 계열에 필수적인 수학 및 과학(화학, 생명과학) 교과의 높은 학업 성취도와 심층 탐구력, 인성을 정밀 평가합니다."
+        }
+      }
+    },
+    "서울시립대학교": {
+      "evalRatio": { "academic": 35, "career": 45, "community": 20 },
+      "departments": {
+        "전자전기컴퓨터공학부": {
+          "category": "공학계열",
+          "coreSubjects": ["수학Ⅰ", "수학Ⅱ", "미적분", "물리학Ⅰ"],
+          "optSubjects": ["물리학Ⅱ", "기하", "정보"],
+          "keywords": ["수학물리기초", "외국어능력", "창의적사고", "기술탐구의욕", "리더십", "의견통합", "미래목표설정"],
+          "guide": "수학과 물리에 대한 풍부한 기초지식과 IT 기술에 대한 탐구 의욕, 협력과 리더십을 중점 평가합니다."
+        },
+        "도시공학과/교통공학과": {
+          "category": "공학계열",
+          "coreSubjects": ["수학Ⅰ", "수학Ⅱ", "확률과 통계"],
+          "optSubjects": ["미적분", "사회·문화", "한국지리"],
+          "keywords": ["도시문제해결", "공간분석", "데이터통계", "시민참여", "공공성", "창의적설계"],
+          "guide": "도시 환경 및 교통 현안에 대한 문제의식과 데이터 기반 분석력, 공공 인프라에 대한 관심도를 평가합니다."
+        },
+        "국제관계학과": {
+          "category": "사회/상경계열",
+          "coreSubjects": ["국어", "영어", "사회·문화"],
+          "optSubjects": ["세계사", "정치와 법", "국제 관계와 국제기구"],
+          "keywords": ["외국어성취도", "사회교과우수", "국제관계관심", "정치외교분석", "국제적마인드", "팀워크", "소통배려"],
+          "guide": "언어 및 사회 교과 성취도를 바탕으로 한 국제 현안 분석력 및 글로벌 마인드, 소통 능력을 평가합니다."
+        }
+      }
+    },
+    "국립공주대학교": {
+      "evalRatio": { "academic": 35, "career": 45, "community": 20 },
+      "departments": {
+        "사범대학 (국어/영어/수학/역사/윤리/지리교육 등)": {
+          "category": "사범/교육",
+          "coreSubjects": ["전공 관련 교과 전 과목", "국어", "수학", "영어"],
+          "optSubjects": ["교육학", "심리학", "독서"],
+          "keywords": ["교직관", "교수학습역량", "학습자이해", "전공교과우수", "소통능력", "교육철학", "진로탐색"],
+          "guide": "사범대학은 예비 교사로서의 투철한 교육관과 전공 교과에 대한 깊이 있는 학업 소양, 학습자를 이해하고 소통하는 태도를 중점 평가합니다."
+        },
+        "인문사회과학대학 (경영/경제/행정/법학/사회복지 등)": {
+          "category": "사회/상경계열",
+          "coreSubjects": ["국어", "영어", "수학Ⅰ", "수학Ⅱ", "사회·문화"],
+          "optSubjects": ["확률과 통계", "경제", "정치와 법"],
+          "keywords": ["비판적사고", "사회현상분석", "공공성", "정책이해", "의사소통", "글로벌마인드", "협업"],
+          "guide": "인문·사회과학적 현상을 논리적으로 분석하고, 사회 문제에 대한 비판적 사유와 공동체 기여 의지를 평가합니다."
+        },
+        "자연과학대학 (수학/화학/생명과학/지질환경 등)": {
+          "category": "자연과학계열",
+          "coreSubjects": ["수학Ⅰ", "수학Ⅱ", "미적분", "화학Ⅰ", "생명과학Ⅰ", "물리학Ⅰ"],
+          "optSubjects": ["기하", "확률과 통계", "화학Ⅱ", "생명과학Ⅱ"],
+          "keywords": ["기초과학역량", "수학적엄밀성", "실험탐구", "원리유도", "지적호기심", "심화탐구", "학문적열의"],
+          "guide": "자연과학 기초 과목의 단계적 이수 충실도와 실험·탐구 과정에서의 문제해결력 및 논리적 추론 능력을 봅니다."
+        },
+        "간호보건대학 (간호학과 / 보건행정 / 응급구조)": {
+          "category": "의약학/보건계열",
+          "coreSubjects": ["수학Ⅰ", "수학Ⅱ", "영어", "화학Ⅰ", "생명과학Ⅰ"],
+          "optSubjects": ["생명과학Ⅱ", "확률과 통계", "생활과 과학"],
+          "keywords": ["생명존중", "인간이해", "보건의료소양", "돌봄과배려", "의사소통", "비판적사고", "공동체의식"],
+          "guide": "보건의료인으로서 갖추어야 할 생명존중 윤리의식과 기초 생명과학 학업 역량, 타인에 대한 배려와 소통을 평가합니다."
+        },
+        "천안공과대학 (기계자동차 / 전기전자제어 / 컴퓨터공학 / 화학공학 등)": {
+          "category": "공학계열",
+          "coreSubjects": ["수학Ⅰ", "수학Ⅱ", "미적분", "물리학Ⅰ", "화학Ⅰ"],
+          "optSubjects": ["기하", "물리학Ⅱ", "화학Ⅱ", "인공지능 수학", "정보"],
+          "keywords": ["공학기초", "역학적사고", "알고리즘", "시스템설계", "기술혁신", "문제해결력", "도전정신"],
+          "guide": "공학 계열 전공에 필수적인 수학·과학(물리·화학) 과목의 위계적 이수와 창의적 설계·구현 경험을 집중 평가합니다."
+        },
+        "산업과학대학 (식물자원 / 동물생명 / 스마트팜 / 식품공학 등)": {
+          "category": "자연과학계열",
+          "coreSubjects": ["수학Ⅰ", "화학Ⅰ", "생명과학Ⅰ"],
+          "optSubjects": ["생명과학Ⅱ", "화학Ⅱ", "사회문제 탐구"],
+          "keywords": ["생물자원", "스마트농업", "생태환경", "바이오소재", "실험설계", "지속가능성", "영농창업"],
+          "guide": "생명과학과 화학 기반의 농생명 바이오 기술 이해도와 미래 산업(스마트팜·환경)에 대한 융합적 탐구 노력을 평가합니다."
+        },
+        "자율전공학부 (유형I / 유형II 통합선발)": {
+          "category": "자율/융합",
+          "coreSubjects": ["국어", "수학", "영어", "통합사회", "통합과학"],
+          "optSubjects": ["수학Ⅰ", "수학Ⅱ", "사회·문화", "생활과 윤리", "과학탐구실험"],
+          "keywords": ["자기주도성", "다학제융합", "학업성취도", "폭넓은탐구", "도전정신", "진로탐색", "문제해결"],
+          "guide": "특정 전공에 얽매이지 않고 고교 교육과정을 충실히 이수하며 보여준 폭넓은 지적 탐색 과정과 자기주도적 성장 가능성을 평가합니다."
+        }
+      }
+    },
+    "한국기술교육대학교": {
+      "evalRatio": { "academic": 35, "career": 35, "community": 30 },
+      "departments": {
+        "기계공학부 / 메카트로닉스공학부 / 건축공학과": {
+          "category": "공학계열",
+          "coreSubjects": ["수학Ⅰ", "수학Ⅱ", "미적분", "물리학Ⅰ"],
+          "optSubjects": ["기하", "물리학Ⅱ", "화학Ⅰ"],
+          "keywords": ["기초학업역량", "학업태도", "전공활동우수성", "성실성", "적극성", "주도성", "협동심"],
+          "guide": "공학 기초 과목에 대한 학업 태도와 물리·수학적 지식을 바탕으로 한 전공 관련 프로젝트 및 실험·실습 수행 역량을 중점 평가합니다."
+        },
+        "전기·전자·통신공학부 (전기/전자/AI정보통신)": {
+          "category": "공학계열",
+          "coreSubjects": ["수학Ⅰ", "수학Ⅱ", "미적분", "물리학Ⅰ"],
+          "optSubjects": ["기하", "확률과 통계", "정보"],
+          "keywords": ["기초학업역량", "전공적합성", "회로설계", "시스템이해", "주도성", "공동체의식", "탐구능력"],
+          "guide": "전기전자 하드웨어 및 ICT 시스템 이해를 위한 수리·물리적 탐구력과 자기주도적 학습 태도를 종합적으로 평가합니다."
+        },
+        "컴퓨터공학부 (컴퓨터공학 / AI·소프트웨어)": {
+          "category": "공학계열",
+          "coreSubjects": ["수학Ⅰ", "수학Ⅱ", "미적분", "확률과 통계"],
+          "optSubjects": ["기하", "정보", "인공지능 수학"],
+          "keywords": ["컴퓨팅사고", "알고리즘", "소프트웨어역량", "기초학업능력", "자기주도성", "협동심", "문제해결"],
+          "guide": "컴퓨팅 사고력과 알고리즘 설계 능력을 뒷받침하는 수학·정보 교과 성취도 및 소프트웨어 개발 프로젝트 경험을 평가합니다."
+        },
+        "에너지신소재화학공학부 (에너지신소재 / 화학생명공학)": {
+          "category": "공학계열",
+          "coreSubjects": ["수학Ⅰ", "수학Ⅱ", "미적분", "화학Ⅰ", "물리학Ⅰ"],
+          "optSubjects": ["화학Ⅱ", "생명과학Ⅰ", "기하"],
+          "keywords": ["화학적기초", "소재탐구", "실험역량", "학업태도", "나우리역량", "공동체의식", "발전가능성"],
+          "guide": "화학 및 물리 교과의 탄탄한 기초 지식을 바탕으로 신소재·바이오 화학 분야의 실험·탐구 활동 수행 과정을 정성 평가합니다."
+        },
+        "디자인공학과": {
+          "category": "공학계열",
+          "coreSubjects": ["국어", "영어", "수학Ⅰ", "사회·문화"],
+          "optSubjects": ["미술 창작", "생활과 디자인", "확률과 통계"],
+          "keywords": ["인문사회공학융합", "조형능력", "프로토타이핑", "주도적실행", "나우리역량", "소통능력", "창의성"],
+          "guide": "인간, 사회, 환경을 고려하는 통합적 디자인 사고와 실험·실습 기반의 실행 및 협업 능력을 평가합니다."
+        },
+        "경영학부 (융합경영 / 데이터경영)": {
+          "category": "사회/상경계열",
+          "coreSubjects": ["수학Ⅰ", "수학Ⅱ", "확률과 통계", "경제"],
+          "optSubjects": ["경제 수학", "사회·문화", "정보"],
+          "keywords": ["수리분석", "데이터해석", "비즈니스소양", "학업태도", "주도성", "공동체의식", "문제해결"],
+          "guide": "경영 이론에 대한 이해와 데이터 분석·활용을 위한 수리적 소양 및 기업가정신에 기반한 주도적 활동을 평가합니다."
+        },
+        "고용서비스정책학과": {
+          "category": "사회/상경계열",
+          "coreSubjects": ["국어", "영어", "사회·문화", "정치와 법"],
+          "optSubjects": ["사회문제 탐구", "심리학", "생활과 윤리"],
+          "keywords": ["사회적역량", "공공성", "상담소양", "나우리역량", "나눔과배려", "의사소통", "학업태도"],
+          "guide": "고용 및 노동 정책, 직업 상담 분야에 필요한 사회과학적 소양과 타인에 대한 진정성 있는 배려 및 소통 능력을 중점 평가합니다."
+        },
+        "반도체·디스플레이공학과 (충남형 계약학과)": {
+          "category": "공학계열",
+          "coreSubjects": ["수학Ⅰ", "수학Ⅱ", "미적분", "물리학Ⅰ", "화학Ⅰ"],
+          "optSubjects": ["기하", "물리학Ⅱ", "화학Ⅱ"],
+          "keywords": ["채용약정연계", "실무역량", "소재및장비", "전공적합성", "학업역량", "주도적실행", "협업능력"],
+          "guide": "충청남도 주력 산업인 반도체·디스플레이 소재 및 장비 트랙에 부합하는 수학·과학 기초학업역량과 현장 실무 적응력을 평가합니다."
+        }
+      }
+    },
+    "국립한밭대학교": {
+      "evalRatio": { "academic": 35, "career": 35, "community": 30 },
+      "departments": {
+        "공과대학 / 정보기술대학 (기계공학과 / 전자공학과 / 전기공학과 / 화학생명공학과 등)": {
+          "category": "공학계열",
+          "coreSubjects": ["수학Ⅰ", "수학Ⅱ", "미적분", "물리학Ⅰ"],
+          "optSubjects": ["기하", "물리학Ⅱ", "화학Ⅰ", "화학Ⅱ"],
+          "keywords": ["진로역량", "학업역량", "공동체역량", "기초수학", "공학기초", "전공적합성", "탐구력"],
+          "guide": "수학 및 물리·화학 중심의 기초 교과 성취도와 기계, 전자, 화학 등 공학 기반 전공 관련 탐구 노력 및 계열 적합성을 종합 평가합니다."
+        },
+        "AI융합대학 (컴퓨터공학과 / 인공지능소프트웨어학과 / 정보통신공학과 등)": {
+          "category": "공학계열",
+          "coreSubjects": ["수학Ⅰ", "수학Ⅱ", "미적분", "확률과 통계"],
+          "optSubjects": ["기하", "정보", "인공지능 수학"],
+          "keywords": ["컴퓨팅사고", "알고리즘", "소프트웨어", "인공지능", "데이터분석", "창의융합력"],
+          "guide": "수학적 논리력과 정보 교과 이수 충실도, 프로그래밍 및 인공지능·빅데이터 관련 문제해결 활동 경험을 중점 평가합니다."
+        },
+        "건설환경디자인대학 (건축공학과 / 건축학과(5년제) / 도시공학과 / 건설환경공학과)": {
+          "category": "공학계열",
+          "coreSubjects": ["수학Ⅰ", "수학Ⅱ", "물리학Ⅰ"],
+          "optSubjects": ["미적분", "기하", "지구과학Ⅰ", "사회·문화"],
+          "keywords": ["공간설계", "구조이해", "도시계획", "창의적발상", "환경융합", "문제해결력"],
+          "guide": "건축 및 도시, 환경 분야에 필요한 물리·수학적 기초 역량과 공간·도시 현상에 대한 창의적 탐구 태도를 평가합니다."
+        },
+        "인문사회대학 / 경상대학 (공공행정학과 / 영어영문학과 / 경제학과 / 융합경영학과 / 회계세무학과)": {
+          "category": "사회/상경계열",
+          "coreSubjects": ["국어", "영어", "수학Ⅰ", "수학Ⅱ", "사회·문화"],
+          "optSubjects": ["경제", "정치와 법", "확률과 통계", "독서"],
+          "keywords": ["의사소통능력", "수리분석력", "사회현상분석", "비즈니스사고", "윤리의식", "협업능력"],
+          "guide": "인문·어학적 소양과 수리·통계적 분석력을 바탕으로 한 사회 및 경제 현상 탐구 경험과 공동체 소통 능력을 종합 평가합니다."
+        },
+        "융합자율대학 (자율전공학부 / 공학건설학부 / 정보기술AI융합학부 / 인문사회경상학부)": {
+          "category": "자율/융합",
+          "coreSubjects": ["국어", "수학", "영어", "통합사회", "통합과학"],
+          "optSubjects": ["수학Ⅰ", "수학Ⅱ", "사회·문화", "생활과 윤리", "과학탐구실험"],
+          "keywords": ["자기주도성", "창의적지식인", "도전적세계인", "융합역량", "학업충실도", "발전가능성"],
+          "guide": "특정 영역에 치우치지 않는 균형 잡힌 기초 학업 성취도와 스스로 전공을 탐색하고 융합해 나갈 수 있는 자기주도적 발전가능성을 집중 평가합니다."
+        }
+      }
+    },
+    "서강대학교": {
+      "evalRatio": { "academic": 50, "career": 30, "community": 20 },
+      "departments": {
+        "공과대학 (전자공학과 / 화공생명공학과 / 기계공학과 / 컴퓨터공학과 / 반도체공학과 / 시스템반도체공학과 / 인공지능학과)": {
+          "category": "공학계열",
+          "coreSubjects": ["수학Ⅰ", "수학Ⅱ", "미적분", "기하", "물리학Ⅰ"],
+          "optSubjects": ["물리학Ⅱ", "화학Ⅰ", "확률과 통계", "정보"],
+          "keywords": ["학업역량", "탐구능력", "융합능력", "창의적문제해결력", "성장가능성", "자기주도성", "공학기초"],
+          "guide": "수학 및 물리·화학 중심의 심화 교과 이수 성취도와 함께 창의적이고 논리적인 사고로 복합적인 공학 문제를 해결하는 융합 탐구 역량을 집중 평가합니다."
+        },
+        "자연과학대학 (수학과 / 물리학과 / 화학과 / 생명과학과)": {
+          "category": "자연과학계열",
+          "coreSubjects": ["수학Ⅰ", "수학Ⅱ", "미적분", "물리학Ⅰ", "화학Ⅰ", "생명과학Ⅰ"],
+          "optSubjects": ["기하", "물리학Ⅱ", "화학Ⅱ", "생명과학Ⅱ", "확률과 통계"],
+          "keywords": ["지적호기심", "학업수월성", "기초과학역량", "탐구능력", "실험탐구", "성장가능성"],
+          "guide": "자연과학 기초 과목에 대한 깊은 지적 호기심과 과목 간 위계적 이수 충실도, 실험 및 탐구 활동을 통해 스스로 원리를 규명해 나가는 태도를 평가합니다."
+        },
+        "지식융합미디어학부 (신문방송학과 / 미디어&엔터테인먼트학과 / 아트&테크놀로지학과)": {
+          "category": "사회/상경계열",
+          "coreSubjects": ["국어", "영어", "사회·문화"],
+          "optSubjects": ["미디어 커뮤니케이션", "정보", "미술", "융합소프트웨어"],
+          "keywords": ["융합능력", "창의적문제해결력", "경험개방성", "스토리텔링", "소통과협업", "문화콘텐츠"],
+          "guide": "인문·예술적 감성과 첨단 미디어·소프트웨어 기술을 결합하는 다학제적 경험 개방성과 독창적인 스토리텔링 및 창의적 표현 역량을 종합 평가합니다."
+        },
+        "경영학부 / 경제학과": {
+          "category": "사회/상경계열",
+          "coreSubjects": ["수학Ⅰ", "수학Ⅱ", "확률과 통계", "국어", "영어"],
+          "optSubjects": ["미적분", "경제", "경제 수학", "사회·문화"],
+          "keywords": ["수리적분석", "데이터해석", "경제적사고", "창의적문제해결력", "자기주도성", "리더십"],
+          "guide": "상경계열 학습을 뒷받침하는 수리적·통계적 분석력과 경제 및 경영 현상에 대한 비판적 탐구, 합리적 대안 도출 능력을 평가합니다."
+        },
+        "인문학부 / 영문학부 / 유럽문화학과 / 중국문화학과 / 사회과학부": {
+          "category": "인문계열",
+          "coreSubjects": ["국어", "영어", "사회·문화", "한국사"],
+          "optSubjects": ["고전 읽기", "윤리와 사상", "정치와 법", "세계사"],
+          "keywords": ["학업역량", "탐구능력", "텍스트분석", "비판적사고", "소통과협업", "인간사회통찰"],
+          "guide": "인문·사회 영역의 깊이 있는 텍스트 독해력과 논리적 표현력, 인간과 사회 구조에 대한 비판적 통찰 및 열린 공동체 소통 역량을 평가합니다."
+        },
+        "자유전공학부 (인문학기반 / SCIENCE기반 / AI기반)": {
+          "category": "자율/융합",
+          "coreSubjects": ["국어", "수학", "영어", "통합사회", "통합과학"],
+          "optSubjects": ["수학Ⅰ", "수학Ⅱ", "미적분", "사회·문화", "생활과 윤리", "과학탐구실험"],
+          "keywords": ["학업수월성", "융합능력", "경험개방성", "자기주도성", "목표지속성", "창의성"],
+          "guide": "전공의 경계를 두지 않는 서강대 다전공·자유전공 제도의 특성에 맞춰, 균형 잡힌 학업 성취도와 자기주도적으로 학습 경로를 설계·확장해 나가는 성장 잠재력을 중점 평가합니다."
+        }
+      }
+    }
+  };
 }
 </script>
 </body>
