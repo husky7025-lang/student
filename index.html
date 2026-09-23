@@ -451,6 +451,7 @@ function initCategorySelect() {
 function filterUnivList() {
   const selectedCat = document.getElementById("categorySelect").value;
   const univSel = document.getElementById("univSelect");
+  const currentSelectedUniv = univSel.value;
   univSel.innerHTML = "";
 
   const allUnivs = Object.keys(UNIV_DATABASE);
@@ -465,6 +466,9 @@ function filterUnivList() {
       if (hasCat) filteredUnivs.push(univ);
     }
   });
+
+  // [사용자 요청] 목표대학 드롭다운에서 항상 이름순(가나다순) 정렬
+  filteredUnivs.sort((a, b) => a.localeCompare(b, 'ko'));
 
   if (filteredUnivs.length === 0) {
     const opt = document.createElement("option");
@@ -481,6 +485,10 @@ function filterUnivList() {
     opt.innerText = univ;
     univSel.appendChild(opt);
   });
+
+  if (currentSelectedUniv && filteredUnivs.includes(currentSelectedUniv)) {
+    univSel.value = currentSelectedUniv;
+  }
 
   updateDeptSelect();
 }
@@ -503,17 +511,33 @@ function updateDeptSelect() {
   const univ = document.getElementById("univSelect").value;
   const selectedCat = document.getElementById("categorySelect").value;
   const deptSel = document.getElementById("deptSelect");
+  const currentSelectedDept = deptSel.value;
   deptSel.innerHTML = "";
   if (!UNIV_DATABASE[univ]) return;
   
   const depts = UNIV_DATABASE[univ].departments;
+  const deptList = [];
   for (const dept in depts) {
     if (selectedCat === "전체 계열" || depts[dept].category === selectedCat || !depts[dept].category) {
-      const opt = document.createElement("option");
-      opt.value = dept;
-      opt.innerText = (depts[dept].category ? `[${depts[dept].category}] ` : "") + dept;
-      deptSel.appendChild(opt);
+      deptList.push({
+        dept,
+        category: depts[dept].category
+      });
     }
+  }
+
+  // 학과 목록도 가나다순(이름순) 정렬
+  deptList.sort((a, b) => a.dept.localeCompare(b.dept, 'ko'));
+
+  deptList.forEach(d => {
+    const opt = document.createElement("option");
+    opt.value = d.dept;
+    opt.innerText = (d.category ? `[${d.category}] ` : "") + d.dept;
+    deptSel.appendChild(opt);
+  });
+
+  if (currentSelectedDept && deptList.some(d => d.dept === currentSelectedDept)) {
+    deptSel.value = currentSelectedDept;
   }
 
   if (lastAnalysisState && document.getElementById("resultSection").style.display !== "none" && !lastAnalysisState.guideTxt) {
