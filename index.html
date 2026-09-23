@@ -178,7 +178,7 @@
 <div class="wrap">
   <header class="noprint">
     <h1>📋 생활기록부 종합 심층 역량 진단기</h1>
-    <p><b>모집요강 자동 파싱</b>, <b>2026 기재금지어 & AI 리스크 스크리닝</b>, <b>나이스 바이트 충실도</b>, <b>대학별 1:1 정합도 진단</b></p>
+    <p><b>모집요강 자동 파싱</b>, <b>2026 기재금지어 & AI 리스크 스크리닝</b>, <b>나이스 바이트 충실도</b>, <b>대학별 1:1 맞춤 적합도 진단</b></p>
     <div class="privacy-tag">🔒 서버 전송 없는 100% 로컬 브라우저 분석 (학생 개인정보 완벽 보호)</div>
   </header>
 
@@ -255,7 +255,7 @@
     <!-- 1. 목표 대학 맞춤 GAP 분석 카드 -->
     <div class="panel">
       <div style="display:flex; justify-content:space-between; align-items:center;">
-        <h2 style="font-size:1.18rem; color:var(--navy);">🎯 지원 목표 대학 맞춤형 정합성 갭(GAP) 분석</h2>
+        <h2 style="font-size:1.18rem; color:var(--navy);">🎯 지원 목표 대학 맞춤 적합도 갭(GAP) 분석</h2>
         <button class="btn ghost noprint" style="padding:6px 12px; font-size:0.84rem;" onclick="window.print()">🖨 결과 인쇄</button>
       </div>
       <div id="gapContainer"></div>
@@ -530,7 +530,7 @@ function parseGuidePdfText(pdfText, fileName) {
     coreSubjects: detectedCore.length > 0 ? detectedCore.slice(0, 5) : ["수학Ⅰ", "미적분"],
     optSubjects: detectedCore.length > 5 ? detectedCore.slice(5, 10) : ["확률과 통계"],
     keywords: topKeywords.length > 0 ? topKeywords : ["탐구력", "자기주도성", "전공적합성", "학업역량"],
-    guide: `업로드된 [${fileName}] 문서에서 자동 파싱된 기준입니다. 추출된 핵심 권장과목(${detectedCore.slice(0, 4).join(', ') || '기초수학'}) 및 인재상 어휘를 바탕으로 정합도를 진단합니다.`
+    guide: `업로드된 [${fileName}] 문서에서 자동 파싱된 기준입니다. 추출된 핵심 권장과목(${detectedCore.slice(0, 4).join(', ') || '기초수학'}) 및 인재상 어휘를 바탕으로 맞춤 적합도를 진단합니다.`
   };
 
   // 계열 필터를 '전체 계열'로 전환 후 대학 자동 선택
@@ -540,7 +540,7 @@ function parseGuidePdfText(pdfText, fileName) {
   updateDeptSelect();
   document.getElementById("deptSelect").value = autoDeptName;
 
-  alert(`✨ [${univName}] 모집요강이 성공적으로 자동 파싱되어 데이터베이스에 등록되었습니다!\n상단 선택창에서 바로 1:1 맞춤 정합성 분석이 가능합니다.`);
+  alert(`✨ [${univName}] 모집요강이 성공적으로 자동 파싱되어 데이터베이스에 등록되었습니다!\n상단 선택창에서 바로 1:1 맞춤 적합도 분석이 가능합니다.`);
 }
 
 // -------------------------------------------------------------
@@ -1352,10 +1352,10 @@ function renderPresetGuideMatching(studentTxt, aPct, cPct, mPct, lvlData) {
   let gradeBadge = "";
   let badgeColor = "";
   if (totalMatchRate >= 85) {
-    gradeBadge = "🟢 최상위 정합도 (합격 유력)";
+    gradeBadge = "🟢 최상위 적합도 (합격 유력)";
     badgeColor = "background:#dcfce7; color:#16a34a; border:1px solid #bbf7d0;";
   } else if (totalMatchRate >= 70) {
-    gradeBadge = "🔵 적정 정합도 (경쟁력 확보)";
+    gradeBadge = "🔵 적정 적합도 (경쟁력 확보)";
     badgeColor = "background:#eff6ff; color:#2563eb; border:1px solid #bfdbfe;";
   } else if (totalMatchRate >= 55) {
     gradeBadge = "🟠 소신 지원 (전공 역량 보완 시급)";
@@ -1374,7 +1374,7 @@ function renderPresetGuideMatching(studentTxt, aPct, cPct, mPct, lvlData) {
           <div class="gap-meta">대학 전형 공식 반영비율: 학업 ${targetRatio.academic}% / 진로 ${targetRatio.career}% / 공동체 ${targetRatio.community}%</div>
         </div>
         <div style="text-align:right;">
-          <div class="gap-match" style="${badgeColor}">냉정 정합성: ${totalMatchRate}%</div>
+          <div class="gap-match" style="${badgeColor}">맞춤 적합도: ${totalMatchRate}%</div>
           <div style="font-size:0.75rem; font-weight:800; margin-top:4px; color:#475569;">${gradeBadge}</div>
         </div>
       </div>
@@ -1470,18 +1470,18 @@ function renderDynamicGuideMatching(studentTxt, guideTxt, aPct, cPct, mPct, lvlD
 
   const finalMatch = Math.min(100, Math.max(10, subjScore + kwScore + levelScore));
 
-  let gradeBadge = finalMatch >= 80 ? "🟢 양호 (일치도 우수)" : (finalMatch >= 60 ? "🟠 보통 (보완 권장)" : "🔴 주의 (정합도 부족)");
+  let gradeBadge = finalMatch >= 80 ? "🟢 양호 (일치도 우수)" : (finalMatch >= 60 ? "🟠 보통 (보완 권장)" : "🔴 주의 (맞춤 적합도 부족)");
 
   const customArea = document.getElementById("gapContainer");
   customArea.innerHTML = `
     <div class="gap-box" style="border-color:var(--purple); background:#faf5ff;">
       <div class="gap-header">
         <div>
-          <div class="gap-title" style="color:var(--purple);">🎯 업로드된 대학 요강 1:1 정합도 진단</div>
+          <div class="gap-title" style="color:var(--purple);">🎯 업로드된 대학 요강 1:1 맞춤 적합도 진단</div>
           <div class="gap-meta" style="color:#7e22ce;">입력된 요강 텍스트의 핵심 지표와 권장 과목을 실시간 파싱하여 엄격 채점한 결과입니다.</div>
         </div>
         <div style="text-align:right;">
-          <div class="gap-match" style="background:#f3e8ff; color:var(--purple);">정합도 지수: ${finalMatch}%</div>
+          <div class="gap-match" style="background:#f3e8ff; color:var(--purple);">맞춤 적합도 지수: ${finalMatch}%</div>
           <div style="font-size:0.75rem; font-weight:800; margin-top:4px; color:#7e22ce;">${gradeBadge}</div>
         </div>
       </div>
