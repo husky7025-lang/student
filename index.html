@@ -983,38 +983,40 @@ function parseNeisSections(text) {
     const sec6Text = sec6Match ? sec6Match[1] : "";
 
     if (sec6Text) {
-      for (const gr of ["1", "2", "3"]) {
-        // 학년 블록 탐색 (예: \n1\n 또는 1 자율활동...)
-        const grReg = new RegExp(`(?:^|\\n)\\s*${gr}\\s*\\n([\\s\\S]*?)(?=(?:\\n\\s*[1-3]\\s*\\n|봉\\s*사\\s*활\\s*동|$))`, 'i');
-        const grFound = sec6Text.match(grReg);
-        const grBlock = grFound ? grFound[1] : "";
+      const s6Clean = sec6Text.split(/봉\s*사\s*활\s*동/)[0];
+      const actMatches = [...s6Clean.matchAll(/(?:^|\n)\s*(?:([1-3])\s+)?(자율활동|동아리활동|진로활동)\s*(\d+)?\s*/g)];
+      let curGr = 1;
+      let prevType = null;
 
-        // 자율활동 추출
-        const autoM = grBlock.match(/자율활동\s*(?:\d+)?\s*\n?([\s\S]*?)(?=(?:동아리활동|진로활동|$))/i);
-        if (autoM && autoM[1].trim()) {
-          const autoClean = autoM[1].replace(/^[0-9]+\s*/, '').trim();
-          sections.autonomyByGrade[gr] = autoClean;
-          sections.autonomy += (sections.autonomy ? "\n\n" : "") + `[${gr}학년 자율활동]\n` + autoClean;
-        }
+      actMatches.forEach((m, idx) => {
+        const grExplicit = m[1];
+        const actType = m[2];
+        const shortType = actType.includes("자율") ? "자율" : (actType.includes("동아리") ? "동아리" : "진로");
+        const start = m.index + m[0].length;
+        const end = (idx + 1 < actMatches.length) ? actMatches[idx + 1].index : s6Clean.length;
+        let chunk = s6Clean.substring(start, end).trim();
+        chunk = chunk.replace(/\[?○○고등학교\]?[^\n]*/g, '').replace(/^[0-9]+\s*/, '').trim();
 
-        // 동아리활동 추출
-        const clubM = grBlock.match(/동아리활동\s*(?:\d+)?\s*\n?([\s\S]*?)(?=(?:진로활동|$))/i);
-        if (clubM && clubM[1].trim()) {
-          const clubClean = clubM[1].replace(/^[0-9]+\s*/, '').trim();
-          sections.clubByGrade[gr] = clubClean;
-          sections.club += (sections.club ? "\n\n" : "") + `[${gr}학년 동아리활동]\n` + clubClean;
+        if (grExplicit) {
+          curGr = parseInt(grExplicit, 10);
+        } else if (shortType === "자율" && (prevType === "동아리" || prevType === "진로")) {
+          curGr = Math.min(3, curGr + 1);
         }
+        prevType = shortType;
+        const grStr = String(curGr);
 
-        // 진로활동 추출
-        const careerM = grBlock.match(/진로활동\s*(?:\d+)?\s*\n?([\s\S]*?)$/i);
-        if (careerM && careerM[1].trim()) {
-          let careerClean = careerM[1].replace(/^[0-9]+\s*/, '').trim();
-          // 희망분야 라인 제거
-          careerClean = careerClean.replace(/희망분야[^\n]+\n?/, '').trim();
-          sections.careerByGrade[gr] = careerClean;
-          sections.career += (sections.career ? "\n\n" : "") + `[${gr}학년 진로활동]\n` + careerClean;
+        if (shortType === "자율") {
+          sections.autonomyByGrade[grStr] = (sections.autonomyByGrade[grStr] || "") + (sections.autonomyByGrade[grStr] ? "\n" : "") + chunk;
+          sections.autonomy += (sections.autonomy ? "\n\n" : "") + `[${grStr}학년 자율활동]\n` + chunk;
+        } else if (shortType === "동아리") {
+          sections.clubByGrade[grStr] = (sections.clubByGrade[grStr] || "") + (sections.clubByGrade[grStr] ? "\n" : "") + chunk;
+          sections.club += (sections.club ? "\n\n" : "") + `[${grStr}학년 동아리활동]\n` + chunk;
+        } else if (shortType === "진로") {
+          chunk = chunk.replace(/희망분야[^\n]+\n?/, '').trim();
+          sections.careerByGrade[grStr] = (sections.careerByGrade[grStr] || "") + (sections.careerByGrade[grStr] ? "\n" : "") + chunk;
+          sections.career += (sections.career ? "\n\n" : "") + `[${grStr}학년 진로활동]\n` + chunk;
         }
-      }
+      });
     }
 
     // 2. 교과학습발달상황 (7번) 과목별 세특 파싱
@@ -1022,15 +1024,17 @@ function parseNeisSections(text) {
     const sec7Text = sec7Match ? sec7Match[1] : "";
 
     if (sec7Text) {
-      // 학년별 분할 ([1학년], [2학년], [3학년])
-      const gradeSplits = sec7Text.split(/(?=\[[1-3]학년\])/);
+      // 학년별 분할: 나이스 공식 규격 [1 학생명], [1[학생성명]], [1학년], [1] 등 모든 표기 완벽 지원
+      const gradeSplits = sec7Text.split(/(?=(?:^|\n)\s*(?:\[\s*[1-3]\s*(?:학년|\[?학생성명\]?|[가-힣]{2,4})?\s*\]|\[?[1-3]학년\]))/);
       gradeSplits.forEach(gChunk => {
         let curGrade = "1";
-        const gHeader = gChunk.match(/\[([1-3])학년\]/);
-        if (gHeader) curGrade = gHeader[1];
+        const gHeader = gChunk.match(/(?:^|\n)\s*(?:\[\s*([1-3])\s*(?:학년|\[?학생성명\]?|[가-힣]{2,4})?\s*\]|\[?([1-3])학년\])/);
+        if (gHeader) {
+          curGrade = gHeader[1] || gHeader[2];
+        }
 
         // 과목명: 세특내용 정규식 (나이스 표준 형태: '국어: 내용', '(1학기)통합과학: 내용', '물리학Ⅱ: 내용')
-        const subjBlockRegex = /(?:^|\n)\s*(?:\([1-2]학기\))?\s*([가-힣A-Za-z0-9ⅠⅡIIVV\s·ㆍ+]+?)\s*:\s*([\s\S]+?)(?=(?:\n\s*(?:\([1-2]학기\))?\s*[가-힣A-Za-z0-9ⅠⅡIIVV\s·ㆍ+]+?\s*:)|(?:\n\s*\[[1-3]학년\])|(?:\n\s*<진로\s*선택\s*과목>)|(?:\n\s*<체육[ㆍ·]예술>)|(?:\n\s*이수학점)|$)/g;
+        const subjBlockRegex = /(?:^|\n)\s*(?:\([1-2]학기\))?\s*([가-힣A-Za-z0-9ⅠⅡIIVV\s·ㆍ+]+?)\s*:\s*([\s\S]+?)(?=(?:\n\s*(?:\([1-2]학기\))?\s*[가-힣A-Za-z0-9ⅠⅡIIVV\s·ㆍ+]+?\s*:)|(?:\n\s*\[\s*[1-3])|(?:\n\s*<진로\s*선택\s*과목>)|(?:\n\s*<체육[ㆍ·]예술>)|(?:\n\s*이수학점)|$)/g;
         
         let sM;
         while ((sM = subjBlockRegex.exec(gChunk)) !== null) {
@@ -1042,7 +1046,7 @@ function parseNeisSections(text) {
           if (!isInvalidHeader && sRawName.length >= 2 && sContent.length > 20) {
             const cleanSubjName = sRawName.replace(/\([1-2]학기\)/g, '').trim();
             sections.subjects[cleanSubjName] = (sections.subjects[cleanSubjName] || "") + (sections.subjects[cleanSubjName] ? "\n\n" : "") + sContent;
-            sections.subjectsByGrade[curGrade][cleanSubjName] = sContent;
+            sections.subjectsByGrade[curGrade][cleanSubjName] = (sections.subjectsByGrade[curGrade][cleanSubjName] || "") + (sections.subjectsByGrade[curGrade][cleanSubjName] ? "\n\n" : "") + sContent;
           }
         }
       });
@@ -1053,14 +1057,18 @@ function parseNeisSections(text) {
     const sec9Text = sec9Match ? sec9Match[1] : "";
 
     if (sec9Text) {
+      let clean9 = sec9Text.replace(/\[?○○고등학교\]?[^\n]*/g, '').replace(/\[학생성명\]\s*행동특성\s*및\s*종합의견/g, '').trim();
       for (const gr of ["1", "2", "3"]) {
-        const bReg = new RegExp(`(?:^|\\n)\\s*${gr}\\s*\\n([\\s\\S]*?)(?=(?:\\n\\s*[1-3]\\s*\\n|$))`, 'i');
-        const bFound = sec9Text.match(bReg);
+        const bReg = new RegExp(`(?:^|\\n)\\s*${gr}\\s*(?:\\n|\\s+)([\\s\\S]*?)(?=(?:\\n\\s*[1-3]\\s*(?:\\n|\\s+)|$)|\\[?○○고등학교\\]?)`, 'i');
+        const bFound = clean9.match(bReg);
         if (bFound && bFound[1].trim()) {
-          const bClean = bFound[1].trim();
+          const bClean = bFound[1].replace(/^[1-3]\s+/, '').trim();
           sections.behaviorByGrade[gr] = bClean;
           sections.behavior += (sections.behavior ? "\n\n" : "") + `[${gr}학년 행특]\n` + bClean;
         }
+      }
+      if (!sections.behavior) {
+        sections.behavior = clean9;
       }
     }
   }
@@ -1794,13 +1802,13 @@ function renderSubjectAccordion(subjects, subjectsByGrade, grade = "all") {
   if (grade === "all") {
     const keys = Object.keys(subjects || {});
     keys.forEach(sName => {
-      let gTag = "";
+      const gTags = [];
       if (subjectsByGrade) {
-        if (subjectsByGrade["1"] && subjectsByGrade["1"][sName]) gTag = "1학년";
-        else if (subjectsByGrade["2"] && subjectsByGrade["2"][sName]) gTag = "2학년";
-        else if (subjectsByGrade["3"] && subjectsByGrade["3"][sName]) gTag = "3학년";
+        ["1", "2", "3"].forEach(g => {
+          if (subjectsByGrade[g] && subjectsByGrade[g][sName]) gTags.push(`${g}학년`);
+        });
       }
-      displayList.push({ name: sName, text: subjects[sName], gradeTag: gTag });
+      displayList.push({ name: sName, text: subjects[sName], gradeTag: gTags.join(", ") });
     });
   } else {
     if (subjectsByGrade && subjectsByGrade[grade]) {
