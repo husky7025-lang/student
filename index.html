@@ -1337,7 +1337,8 @@ function toggleAccordion(id) {
 }
 
 // -------------------------------------------------------------
-// [AI 최적 전공 분야 자동 추천 엔진]
+// -------------------------------------------------------------
+// [AI 최적 전공 분야 자동 추천 엔진 - 사정관 관점 엄격·보수 채점 모델]
 // -------------------------------------------------------------
 const MAJOR_RECOMMEND_DOMAINS = [
   {
@@ -1345,17 +1346,21 @@ const MAJOR_RECOMMEND_DOMAINS = [
     category: "공학계열",
     targetHint: "기계",
     badge: "엔지니어링 / 첨단 모빌리티",
-    subjects: ["물리학Ⅰ", "물리학Ⅱ", "미적분", "기하", "수학Ⅰ", "수학Ⅱ"],
-    keywords: ["역학", "회생제동", "모빌리티", "전자기", "설계", "동력", "엔진", "차량", "제어", "유도 기전력", "항공", "기계", "로봇", "센서", "구동", "모터"],
-    desc: "물리학적 원리(전자기 유도, 역학)를 바탕으로 수식 모델링 및 하드웨어 제어·메커니즘 분석 역량이 매우 탁월합니다."
+    coreSubjects: ["물리학Ⅱ", "미적분", "기하"],
+    generalSubjects: ["물리학Ⅰ", "수학Ⅰ", "수학Ⅱ"],
+    specKeywords: ["회생제동", "모빌리티", "유도 기전력", "패러데이", "동력", "엔진", "라인트레이서", "제동 거리", "모터 드라이버", "기계공학", "자동차공학", "전자기 유도"],
+    generalKeywords: ["역학", "전자기", "설계", "차량", "제어", "기계", "센서", "시뮬레이션", "구동", "모터"],
+    desc: "물리학적 법칙(전자기 유도, 역학)을 바탕으로 수식 모델링 및 하드웨어 제어·메커니즘 분석 역량이 매우 탁월합니다."
   },
   {
     name: "전기전자·반도체·나노신소재",
     category: "공학계열",
     targetHint: "전자",
     badge: "차세대 반도체 / 나노소자",
-    subjects: ["물리학Ⅰ", "물리학Ⅱ", "화학Ⅰ", "미적분", "기하"],
-    keywords: ["반도체", "회로", "나노", "전도성", "전기", "전자", "신소재", "그래핀", "탄소나노튜브", "저항", "다이오드", "집적회로", "웨이퍼", "소자"],
+    coreSubjects: ["물리학Ⅱ", "화학Ⅱ", "미적분"],
+    generalSubjects: ["물리학Ⅰ", "화학Ⅰ", "수학Ⅰ", "수학Ⅱ"],
+    specKeywords: ["탄소나노튜브", "그래핀", "반도체", "전도성", "나노 기술", "집적회로", "웨이퍼", "다이오드", "신소재"],
+    generalKeywords: ["회로", "나노", "전기", "전자", "저항", "소자", "센서"],
     desc: "신소재의 미시적 분자 구조와 전기적 성질 규명, 회로 및 반도체 소자 물성 탐구에 최적화된 서류를 보유하고 있습니다."
   },
   {
@@ -1363,8 +1368,10 @@ const MAJOR_RECOMMEND_DOMAINS = [
     category: "공학계열",
     targetHint: "컴퓨터",
     badge: "SW / 인공지능 / 빅데이터",
-    subjects: ["수학Ⅰ", "수학Ⅱ", "미적분", "확률과 통계", "정보", "인공지능"],
-    keywords: ["알고리즘", "코딩", "데이터", "인공지능", "프로그래밍", "시뮬레이션", "소프트웨어", "디버깅", "자율주행", "파이썬", "최적화", "연산", "머신러닝"],
+    coreSubjects: ["미적분", "인공지능 수학", "정보"],
+    generalSubjects: ["수학Ⅰ", "수학Ⅱ", "확률과 통계"],
+    specKeywords: ["알고리즘", "자율주행", "머신러닝", "딥러닝", "디버깅", "자료구조", "인공지능", "코딩"],
+    generalKeywords: ["데이터", "프로그래밍", "소프트웨어", "시뮬레이션", "최적화", "연산", "파이썬"],
     desc: "수학적 논리 추론력을 바탕으로 알고리즘 설계와 시뮬레이션 구현, 데이터 최적화 분석 역량이 돋보입니다."
   },
   {
@@ -1372,8 +1379,10 @@ const MAJOR_RECOMMEND_DOMAINS = [
     category: "공학계열",
     targetHint: "화학",
     badge: "배터리 / 신재생 에너지",
-    subjects: ["화학Ⅰ", "화학Ⅱ", "물리학Ⅰ", "미적분"],
-    keywords: ["화학", "분자", "반응속도", "에너지", "배터리", "이차전지", "결합", "촉매", "고분자", "합성", "열역학", "전해질", "전극", "친환경"],
+    coreSubjects: ["화학Ⅱ", "물리학Ⅱ", "미적분"],
+    generalSubjects: ["화학Ⅰ", "물리학Ⅰ", "수학Ⅰ", "수학Ⅱ"],
+    specKeywords: ["이차전지", "배터리 충전", "전해질", "양극재", "음극재", "반응속도", "열역학", "촉매"],
+    generalKeywords: ["화학", "분자", "에너지", "배터리", "결합", "고분자", "합성", "친환경"],
     desc: "화학적 반응 메커니즘과 에너지 변환 효율 고찰, 친환경 배터리 및 고분자 소재 분야의 탐구 완성도가 높습니다."
   },
   {
@@ -1381,8 +1390,10 @@ const MAJOR_RECOMMEND_DOMAINS = [
     category: "의약학/보건계열",
     targetHint: "생명",
     badge: "의약학 / 바이오헬스",
-    subjects: ["생명과학Ⅰ", "생명과학Ⅱ", "화학Ⅰ", "화학Ⅱ"],
-    keywords: ["유전자", "세포", "단백질", "효소", "면역", "생명", "임상", "약물", "신경", "질병", "바이오", "DNA", "생체", "항원", "백신", "수용체"],
+    coreSubjects: ["생명과학Ⅱ", "화학Ⅱ"],
+    generalSubjects: ["생명과학Ⅰ", "화학Ⅰ", "수학Ⅰ", "수학Ⅱ"],
+    specKeywords: ["유전자 가위", "CRISPR", "단백질 구조", "면역 반응", "임상", "항원", "백신", "수용체", "신경전달"],
+    generalKeywords: ["유전자", "세포", "단백질", "효소", "생명", "약물", "질병", "바이오", "DNA"],
     desc: "생명체의 정밀 생체 기전 및 질병·유전자 메커니즘을 규명하고 보건·의약학적 문제해결에 접근하는 열정이 뛰어납니다."
   },
   {
@@ -1390,8 +1401,10 @@ const MAJOR_RECOMMEND_DOMAINS = [
     category: "사회/상경계열",
     targetHint: "경영",
     badge: "비즈니스 / 금융·데이터",
-    subjects: ["수학Ⅰ", "수학Ⅱ", "확률과 통계", "경제", "미적분"],
-    keywords: ["경제", "경영", "시장", "소비자", "통계", "금융", "수요", "공급", "마케팅", "비용", "효율", "데이터분석", "투자", "예측", "재무"],
+    coreSubjects: ["경제", "경제수학", "확률과 통계"],
+    generalSubjects: ["수학Ⅰ", "수학Ⅱ", "사회·문화"],
+    specKeywords: ["게임이론", "한계효용", "재무제표", "포트폴리오", "회귀분석", "거시경제", "미시경제"],
+    generalKeywords: ["경제", "경영", "시장", "소비자", "통계", "금융", "수요", "공급", "마케팅", "투자"],
     desc: "시장 현상과 통계적 데이터 분석을 융합하여 합리적 의사결정을 모델링하는 상경계열 학문 적합성을 지닙니다."
   },
   {
@@ -1399,8 +1412,10 @@ const MAJOR_RECOMMEND_DOMAINS = [
     category: "사회/상경계열",
     targetHint: "사회",
     badge: "미디어 / 법·행정 / 정책",
-    subjects: ["사회·문화", "정치와 법", "생활과 윤리", "국어"],
-    keywords: ["사회", "미디어", "정책", "시민", "공공", "커뮤니케이션", "제도", "여론", "갈등", "인권", "복지", "법률", "언론", "공동체"],
+    coreSubjects: ["정치와 법", "사회문제 탐구", "사회·문화"],
+    generalSubjects: ["생활과 윤리", "세계지리", "한국지리"],
+    specKeywords: ["공공정책", "여론조사", "의제설정", "프레임이론", "사회보장", "입법", "시민참여"],
+    generalKeywords: ["사회", "미디어", "정책", "시민", "공공", "커뮤니케이션", "제도", "갈등", "인권"],
     desc: "사회적 이슈에 대한 다각적 비판의식과 공동체 문제해결을 위한 제도·정책적 대안 제시 역량이 두드러집니다."
   },
   {
@@ -1408,83 +1423,148 @@ const MAJOR_RECOMMEND_DOMAINS = [
     category: "인문계열",
     targetHint: "국어",
     badge: "인문학 / 텍스트·문화비평",
-    subjects: ["국어", "문학", "독서", "윤리와 사상", "세계사", "한국사"],
-    keywords: ["철학", "문학", "역사", "비판", "텍스트", "담론", "윤리", "인간", "언어", "문화", "고전", "해석", "사상", "의미"],
+    coreSubjects: ["윤리와 사상", "고전 읽기", "심화 국어", "철학"],
+    generalSubjects: ["언어와 매체", "현대문학 감상", "세계사", "동아시아사"],
+    specKeywords: ["인문학", "문학비평", "해석학", "담론분석", "작가론", "언어학", "실존주의", "사상사", "텍스트 비평", "탈구축", "미학"],
+    generalKeywords: ["철학", "사상", "고전", "문예", "서사", "인문", "윤리관", "역사의식", "시대정신", "비평"],
     desc: "풍부한 독서 이력과 텍스트 비판적 분석력, 인간과 문화를 관통하는 인문학적 성찰 깊이가 남다릅니다."
   }
 ];
 
 function recommendTopMajors(studentTxt, sections, aPct, cPct, mPct, lvlData) {
   const normTxt = normalizeSubject(studentTxt);
-  const results = [];
+  const avgLevel = lvlData ? parseFloat(lvlData.avgLevel) : 2.0;
+
+  // 0단계: 학생의 대계열(STEM vs 인문사회) 궤적 자동 판별
+  const stemSubjects = ["물리학Ⅰ", "물리학Ⅱ", "화학Ⅰ", "화학Ⅱ", "생명과학Ⅰ", "생명과학Ⅱ", "지구과학Ⅰ", "지구과학Ⅱ", "미적분", "기하", "정보", "인공지능"];
+  const stemSubjCount = stemSubjects.filter(s => studentTxt.includes(s) || normTxt.includes(normalizeSubject(s))).length;
+  const stemKwMatches = studentTxt.match(/수식|실험|원리|유도|역학|회로|코딩|알고리즘|분자|세포|유전자|모빌리티|반도체|화학|물리|생명|공학|데이터/g) || [];
+  const isStemOriented = (stemSubjCount >= 2 && stemKwMatches.length >= 6) || stemSubjCount >= 3;
+
+  // 1단계: 각 도메인별 원시 지표 수집
+  let totalSpecMatchesAll = 0;
+  const rawDomains = [];
 
   MAJOR_RECOMMEND_DOMAINS.forEach(dom => {
-    // 1. 이수 과목 일치도 (최대 30점)
-    let matchedSubjCount = 0;
-    const detectedSubjs = [];
-    dom.subjects.forEach(s => {
-      const normS = normalizeSubject(s);
-      if (studentTxt.includes(s) || normTxt.includes(normS)) {
-        matchedSubjCount++;
-        detectedSubjs.push(s);
-      }
-    });
-    const maxSubjTarget = Math.min(3, dom.subjects.length);
-    const subjScore = Math.min(30, Math.round((matchedSubjCount / maxSubjTarget) * 30));
+    // A. 과목 이수 (최대 25점 - 전공 핵심 고급과목 위계 평가)
+    const coreMatches = (dom.coreSubjects || []).filter(s => studentTxt.includes(s) || normTxt.includes(normalizeSubject(s)));
+    const genMatches = (dom.generalSubjects || []).filter(s => studentTxt.includes(s) || normTxt.includes(normalizeSubject(s)));
+    const subjScore = Math.min(16, coreMatches.length * 8) + Math.min(9, genMatches.length * 3);
 
-    // 2. 전문 어휘 다양성 및 밀도 (최대 45점)
-    let uniqueKwCount = 0;
-    let totalKwMatches = 0;
-    const matchedKwList = [];
-
-    dom.keywords.forEach(kw => {
+    // B. 전문 어휘 분석 (전문 어휘 vs 일반 어휘 가중 분리)
+    const mSpec = [];
+    let totSpec = 0;
+    (dom.specKeywords || []).forEach(kw => {
       const m = studentTxt.match(new RegExp(kw, 'g'));
       if (m && m.length > 0) {
-        uniqueKwCount++;
-        totalKwMatches += m.length;
-        matchedKwList.push({ kw, count: m.length });
+        mSpec.push({ kw, count: m.length });
+        totSpec += m.length;
+      }
+    });
+    totalSpecMatchesAll += totSpec;
+
+    const mGen = [];
+    let totGen = 0;
+    (dom.generalKeywords || []).forEach(kw => {
+      const m = studentTxt.match(new RegExp(kw, 'g'));
+      if (m && m.length > 0) {
+        mGen.push({ kw, count: m.length });
+        totGen += m.length;
       }
     });
 
-    const kwDiversity = Math.min(25, uniqueKwCount * 5);
-    const kwDensity = Math.min(20, Math.round(totalKwMatches * 2));
-    const kwScore = Math.min(45, kwDiversity + kwDensity);
+    // 어휘 다양성 (최대 20점) + 어휘 빈도 (최대 15점, 로그 감쇠)
+    const kwDiv = Math.min(14, mSpec.length * 3.5) + Math.min(6, mGen.length * 1.2);
+    const eff = totSpec * 1.5 + totGen * 0.7;
+    const kwDen = eff > 0 ? Math.min(15, Math.round(Math.log2(eff + 1) * 3.5)) : 0;
+    const kwScore = Math.min(35, Math.round(kwDiv + kwDen));
 
-    // 3. 탐구 성향 및 계열 적합도 밸런스 점수 (최대 25점)
-    let balanceScore = 10;
-    if (dom.category === "공학계열" || dom.category === "자연과학계열") {
-      if (cPct >= 35) balanceScore += 5;
-      if (lvlData && lvlData.avgLevel >= 2.5) balanceScore += 5;
-      if (studentTxt.includes("수식") || studentTxt.includes("실험") || studentTxt.includes("모델링")) balanceScore += 5;
+    // C. 탐구 질적 수준 및 실증 증거 (최대 20점)
+    let lvlScore = 4;
+    if (avgLevel >= 3.0) lvlScore = 12;
+    else if (avgLevel >= 2.5) lvlScore = 9;
+    else if (avgLevel >= 2.0) lvlScore = 6;
+
+    let evidenceScore = 0;
+    if (dom.category === "공학계열") {
+      if (studentTxt.includes("수식") || studentTxt.includes("유도") || studentTxt.includes("증명")) evidenceScore += 3;
+      if (studentTxt.includes("실험") || studentTxt.includes("회로") || studentTxt.includes("설계")) evidenceScore += 3;
+      if (studentTxt.includes("모델링") || studentTxt.includes("시뮬레이션") || studentTxt.includes("알고리즘")) evidenceScore += 2;
     } else if (dom.category === "사회/상경계열") {
-      if (cPct >= 30 && aPct >= 30) balanceScore += 5;
-      if (studentTxt.includes("통계") || studentTxt.includes("조사") || studentTxt.includes("분석")) balanceScore += 5;
-      if (studentTxt.includes("갈등") || studentTxt.includes("조율")) balanceScore += 5;
+      if (studentTxt.includes("통계") || studentTxt.includes("데이터")) evidenceScore += 3;
+      if (studentTxt.includes("갈등") && (studentTxt.includes("조율") || studentTxt.includes("중재"))) evidenceScore += 3;
+      if (studentTxt.includes("사회") || studentTxt.includes("정책")) evidenceScore += 2;
     } else if (dom.category === "의약학/보건계열") {
-      if (lvlData && lvlData.avgLevel >= 3.0) balanceScore += 7;
-      if (studentTxt.includes("실험") || studentTxt.includes("세포") || studentTxt.includes("기전")) balanceScore += 8;
-    } else {
-      if (studentTxt.includes("비판") || studentTxt.includes("성찰") || studentTxt.includes("고찰")) balanceScore += 8;
-      if (studentTxt.includes("『") || studentTxt.includes("「")) balanceScore += 7;
+      if (studentTxt.includes("실험") || studentTxt.includes("가설")) evidenceScore += 3;
+      if (studentTxt.includes("세포") || studentTxt.includes("생명")) evidenceScore += 3;
+      if (studentTxt.includes("임상") || studentTxt.includes("기전")) evidenceScore += 2;
+    } else { // 인문계열
+      if (studentTxt.includes("문학비평") || studentTxt.includes("작가론") || studentTxt.includes("사상사")) evidenceScore += 3;
+      if (studentTxt.includes("인문학") || studentTxt.includes("철학") || studentTxt.includes("고전")) evidenceScore += 3;
+      if (studentTxt.includes("담론") || studentTxt.includes("시대정신") || studentTxt.includes("해석학")) evidenceScore += 2;
     }
-    balanceScore = Math.min(25, balanceScore);
+    const inquiryScore = lvlScore + Math.min(8, evidenceScore);
 
-    const rawScore = subjScore + kwScore + balanceScore + (totalKwMatches * 0.1) + (uniqueKwCount * 0.2);
-    const totalScore = Math.min(99, Math.max(15, Math.round(rawScore)));
-
-    results.push({
-      domain: dom,
-      rawScore,
-      totalScore,
+    rawDomains.push({
+      dom,
       subjScore,
       kwScore,
-      balanceScore,
-      matchedSubjs: detectedSubjs,
-      matchedKws: matchedKwList.sort((a, b) => b.count - a.count).slice(0, 5)
+      inquiryScore,
+      mSpec,
+      totSpec,
+      mGen,
+      coreMatches,
+      genMatches
     });
   });
 
-  results.sort((a, b) => b.rawScore - a.rawScore);
+  // 2단계: 전공 키워드 점유율(집중도, 최대 20점) 산출 및 보수적 총점 계산
+  const results = [];
+  rawDomains.forEach(d => {
+    const share = totalSpecMatchesAll > 0 ? (d.totSpec / totalSpecMatchesAll) : 0;
+    let specShareScore = 0;
+    if (share >= 0.40) specShareScore = 20;
+    else if (share >= 0.25) specShareScore = 14;
+    else if (share >= 0.15) specShareScore = 8;
+    else if (share >= 0.05) specShareScore = 4;
+    else specShareScore = 0;
+
+    // 보수적 4대 축 종합 점수 (100점 만점)
+    let total = d.subjScore + d.kwScore + d.inquiryScore + specShareScore;
+
+    // [⭐ 사정관 기준 엄격 필터링: 전공 키워드 미감지 및 교차 계열 불일치 감점]
+    // 1. 도메인 특화 전문 어휘가 0건이면 최대 28점 상한 (TOP 3 추천 차단)
+    if (d.totSpec === 0) {
+      total = Math.min(28, total);
+    }
+
+    // 2. 이공계열(STEM) 학생인데 인문 전문 활동이 전무한 경우 강력 감점 (독서 단순 언급으로 인한 오분류 차단)
+    if (isStemOriented && d.dom.category === "인문계열") {
+      if (d.mSpec.length < 2) {
+        total = Math.min(18, total - 30);
+      }
+    }
+
+    // 보수적 상한: 고교 생기부 상위권 합격선 상한(88점) 엄격 적용
+    const conservativeScore = Math.min(88, Math.max(5, total));
+
+    // 매칭된 키워드 (전문 어휘 우선 표시)
+    const combinedKws = [...d.mSpec, ...d.mGen].slice(0, 5);
+
+    results.push({
+      domain: d.dom,
+      totalScore: conservativeScore,
+      subjScore: d.subjScore,
+      kwScore: d.kwScore,
+      inquiryScore: d.inquiryScore,
+      specShareScore: specShareScore,
+      sharePct: Math.round(share * 100),
+      matchedSubjs: [...d.coreMatches, ...d.genMatches],
+      matchedKws: combinedKws
+    });
+  });
+
+  results.sort((a, b) => b.totalScore - a.totalScore || b.specShareScore - a.specShareScore);
   return results.slice(0, 3);
 }
 
@@ -1495,8 +1575,8 @@ function renderMajorRecommendations(top3) {
 
   const rankBadges = [
     { cls: "rank-1", text: "🥇 최적 적합 1순위 (강력 추천)", topCls: "top1" },
-    { cls: "rank-2", text: "🥈 유력 적합 2순위", topCls: "" },
-    { cls: "rank-3", text: "🥉 연계 적합 3순위", topCls: "" }
+    { cls: "rank-2", text: "🥈 유력 적합 2순위 (경쟁력 확보)", topCls: "" },
+    { cls: "rank-3", text: "🥉 연계 적합 3순위 (서브/융합 지원)", topCls: "" }
   ];
 
   top3.forEach((r, idx) => {
@@ -1509,16 +1589,32 @@ function renderMajorRecommendations(top3) {
       ? r.matchedKws.map(k => `<span class="badge ${idx === 0 ? 'career' : 'academic'}" style="font-size:0.72rem; padding:2px 6px;">#${k.kw}(${k.count})</span>`).join(" ")
       : "<span style='font-size:0.75rem; color:var(--sub);'>어휘 미감지</span>";
 
+    let gradeAdvice = "";
+    if (r.totalScore >= 80) gradeAdvice = "🟢 서류 경쟁력 최상위 (학종 1차 합격 유력)";
+    else if (r.totalScore >= 65) gradeAdvice = "🔵 적정 지원 가능 (보완 시 경쟁력 강화)";
+    else gradeAdvice = "🟠 소신/융합 지원 권장 (전공 키워드 보완 필요)";
+
     container.innerHTML += `
       <div class="rec-card ${b.topCls}">
         <div>
           <div class="rec-rank-badge ${b.cls}">${b.text}</div>
           <div class="rec-title">${r.domain.name}</div>
           <div style="font-size:0.76rem; color:var(--sub); font-weight:700; margin-bottom:4px;">[${r.domain.category}] · ${r.domain.badge}</div>
-          <div style="display:flex; align-items:baseline; gap:6px; margin: 6px 0 10px;">
-            <span class="rec-score">${r.totalScore}점</span>
-            <span style="font-size:0.75rem; color:var(--sub);">/ 100점 만점</span>
+          
+          <div style="display:flex; align-items:baseline; justify-content:space-between; margin: 8px 0 4px;">
+            <div style="display:flex; align-items:baseline; gap:6px;">
+              <span class="rec-score">${r.totalScore}점</span>
+              <span style="font-size:0.75rem; color:var(--sub);">/ 100점 만점</span>
+            </div>
+            <span style="font-size:0.75rem; font-weight:800; color:#475569;">전공 점유율 ${r.sharePct}%</span>
           </div>
+          <div style="font-size:0.74rem; font-weight:700; color:#1e293b; margin-bottom:8px;">${gradeAdvice}</div>
+          
+          <!-- 사정관 냉정 채점 분해표 -->
+          <div style="font-size:0.72rem; color:#475569; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:6px 8px; margin-bottom:10px; line-height:1.4;">
+            <b>사정관 냉정 채점:</b> 교과 ${r.subjScore}점 + 어휘 ${r.kwScore}점 + 탐구 ${r.inquiryScore}점 + 집중도 ${r.specShareScore}점
+          </div>
+
           <p class="rec-desc">${r.domain.desc}</p>
           
           <div style="margin-bottom:8px;">
