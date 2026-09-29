@@ -747,12 +747,14 @@ function anonymizeAndDenoiseNeisText(text) {
     }
   }
 
-  // 4. 진로활동 희망분야 추출
-  let careerHope = "";
-  const hopeMatch = text.match(/희망분야\s*[:\s]*([가-힣\s,·ㆍ\/]+?)(?=\n|다양한|자신의|학업|진로|체험|탐색|$)/);
-  if (hopeMatch && hopeMatch[1].trim().length >= 2) {
-    careerHope = hopeMatch[1].trim().replace(/[\r\n]+/g, ' ');
-  }
+  // 4. 진로활동 희망분야 추출 (1, 2, 3학년 전체 추출 및 연동)
+  const allHopes = [];
+  const hopeMatches = [...text.matchAll(/희망분야\s*[:\s]*([^\n]{1,40})/g)];
+  hopeMatches.forEach(m => {
+    const raw = m[1].replace(/다양한|자신의|학업|진로|체험|탐색.*$/, '').trim();
+    if (raw && raw.length >= 2 && !allHopes.includes(raw)) allHopes.push(raw);
+  });
+  const careerHope = allHopes.join(" ➔ ");
 
   let clean = text;
 
@@ -796,6 +798,7 @@ function anonymizeAndDenoiseNeisText(text) {
     studentName: studentName || "학생",
     schoolName: schoolName || "고등학교",
     careerHope: careerHope,
+    allHopes: allHopes,
     teachers: teachers
   };
 }
@@ -965,14 +968,19 @@ function parseNeisSections(text) {
     careerByGrade: { "1": "", "2": "", "3": "" },
     behaviorByGrade: { "1": "", "2": "", "3": "" },
     subjectsByGrade: { "1": {}, "2": {}, "3": {} },
-    careerHope: ""
+    careerHope: "",
+    allHopes: []
   };
 
-  // 희망분야 자동 추출
-  const hopeMatch = text.match(/희망분야\s*[:\s]*([가-힣\s,·ㆍ\/]+?)(?=\n|다양한|자신의|학업|진로|체험|탐색|$)/);
-  if (hopeMatch && hopeMatch[1].trim().length >= 2) {
-    sections.careerHope = hopeMatch[1].trim().replace(/[\r\n]+/g, ' ');
-  }
+  // 희망분야 자동 추출 (1, 2, 3학년 전체 추출 및 연동)
+  const allHopes = [];
+  const hopeMatches = [...text.matchAll(/희망분야\s*[:\s]*([^\n]{1,40})/g)];
+  hopeMatches.forEach(m => {
+    const raw = m[1].replace(/다양한|자신의|학업|진로|체험|탐색.*$/, '').trim();
+    if (raw && raw.length >= 2 && !allHopes.includes(raw)) allHopes.push(raw);
+  });
+  sections.allHopes = allHopes;
+  sections.careerHope = allHopes.join(" ➔ ");
 
   // A. 정규 나이스(NEIS) 양식 감지 여부 확인
   const isOfficialNeis = /6\.\s*창의적\s*체험활동상황|7\.\s*교과학습발달상황|9\.\s*행동특성/i.test(text);
@@ -1892,7 +1900,7 @@ const GLOBAL_GENERIC_NOISE = new Set([
   "프로그래밍", "실험", "원리", "구조", "모델링", "연구", "개발", "활동", "탐구"
 ]);
 
-// 13개 세부 전공 도메인 정의 (사정관 게이트키퍼 및 킬러 키워드 탑재)
+// 14개 세부 전공 도메인 정의 (사정관 게이트키퍼 및 킬러 키워드 탑재)
 const MAJOR_RECOMMEND_DOMAINS = [
   {
     name: "기계·로봇·모빌리티·항공",
@@ -1906,9 +1914,9 @@ const MAJOR_RECOMMEND_DOMAINS = [
     coreSubjects: ["물리학Ⅱ", "미적분", "기하"],
     generalSubjects: ["물리학Ⅰ", "수학Ⅰ", "수학Ⅱ"],
     killerKeywords: ["회생제동", "유체역학", "공기역학", "라인트레이서", "모터드라이버", "유도기전력", "패러데이", "동력전달", "감속기", "베어링", "하드웨어제어"],
-    specKeywords: ["모빌리티", "엔진", "제동거리", "기계공학", "자동차공학", "전자기유도", "역학적에너지", "구동축", "기구학"],
+    specKeywords: ["모빌리티", "엔진", "제동거리", "기계공학", "자동차공학", "전자기유도", "역학적에너지", "구동축", "기구학", "설비", "유체기계", "공조"],
     generalKeywords: ["역학", "설계", "차량", "제어", "기계", "센서", "모터", "구동"],
-    targetMajorKeywords: ["기계공학", "기계과", "로봇공학", "자동차공학", "항공우주", "모빌리티", "기계 연구원", "자동차 연구원", "로봇 공학자"],
+    targetMajorKeywords: ["기계공학", "기계과", "로봇공학", "자동차공학", "항공우주", "모빌리티", "기계 연구원", "자동차 연구원", "로봇 공학자", "기계설비", "설비공학", "기계설비공학"],
     desc: "물리학적 법칙(전자기 유도, 역학)을 바탕으로 수식 모델링 및 하드웨어 제어·메커니즘 분석 역량이 매우 탁월합니다."
   },
   {
@@ -1974,9 +1982,9 @@ const MAJOR_RECOMMEND_DOMAINS = [
     coreSubjects: ["미적분", "기하", "물리학Ⅰ"],
     generalSubjects: ["물리학Ⅱ", "지구과학Ⅰ", "수학Ⅰ", "수학Ⅱ", "사회·문화"],
     killerKeywords: ["BIM", "내진설계", "단열공법", "하중분산", "트러스구조", "도시재생", "친환경건축", "제로에너지", "구조역학", "공간조형"],
-    specKeywords: ["건축설계", "건축공학", "공간디자인", "도시계획", "주거환경", "건설환경", "모형제작", "건축재료", "토목공학"],
+    specKeywords: ["건축설계", "건축공학", "공간디자인", "도시계획", "주거환경", "건설환경", "모형제작", "건축재료", "토목공학", "건축설비", "공조설비", "친환경건축"],
     generalKeywords: ["건축", "구조", "공간", "도면", "설계", "도시", "환경", "시공", "하중", "건물"],
-    targetMajorKeywords: ["건축가", "건축학과", "건축공학", "도시공학", "실내건축", "건설환경공학", "토목공학", "건축 디자이너", "도시계획가"],
+    targetMajorKeywords: ["건축가", "건축학과", "건축공학", "도시공학", "실내건축", "건설환경공학", "토목공학", "건축 디자이너", "도시계획가", "건축설비", "건축설비공학"],
     desc: "공간 조형 감각과 구조역학 및 환경 요소를 종합 고려하여 안전하고 지속 가능한 건축·도시 공간을 설계하는 역량이 탁월합니다."
   },
   {
@@ -1993,7 +2001,7 @@ const MAJOR_RECOMMEND_DOMAINS = [
     killerKeywords: ["공리계", "추상대수", "파동방정식", "양자역학", "분자궤도함수", "슈뢰딩거", "미분방정식", "수학적엄밀성", "원리증명"],
     specKeywords: ["통계적추론", "수치해석", "기초과학", "군론", "선형대수", "순수수학", "열역학법칙", "수리물리"],
     generalKeywords: ["수학", "물리", "화학", "원리", "증명", "유도", "공식", "수식", "법칙", "순수과학"],
-    targetMajorKeywords: ["수학과", "물리학과", "화학과", "통계학과", "자연과학", "순수수학", "기초과학 연구원"],
+    targetMajorKeywords: ["수학과 진학", "물리학과 진학", "화학과 진학", "수학 전공", "물리 전공", "화학 전공", "통계학과", "자연과학대학", "기초과학 연구원", "순수수학"],
     desc: "자연계의 근본 원리와 수학적 논리 체계에 대한 순수한 지적 호기심과 학문적 집요함, 기초과학 탐구 역량이 뛰어납니다."
   },
   {
@@ -2016,7 +2024,7 @@ const MAJOR_RECOMMEND_DOMAINS = [
   {
     name: "의예·치의예·한의예·약학",
     category: "의약학/보건계열",
-    targetHint: "의예|의학|치의|한의|약학",
+    targetHint: "의예|의학|치의|한의|약학|의약|바이오|생명|의공학",
     badge: "의과학 / 첨단 신약연구",
     gatekeeper: {
       requiredAny: ["생명과학Ⅰ", "생명과학Ⅱ", "화학Ⅰ", "화학Ⅱ"],
@@ -2027,7 +2035,7 @@ const MAJOR_RECOMMEND_DOMAINS = [
     killerKeywords: ["CRISPR", "유전자가위", "약동학", "수용체", "면역글로불린", "신경전달물질", "표적치료제", "백신개발", "신약개발", "병리학", "약리학"],
     specKeywords: ["단백질구조", "면역반응", "임상시험", "항원항체", "생명윤리", "의학기초", "세포사멸", "신호전달경로"],
     generalKeywords: ["유전자", "세포", "단백질", "효소", "생명", "약물", "질병", "바이오", "DNA", "치료제", "의료"],
-    targetMajorKeywords: ["의사", "의예과", "의대", "치과의사", "치의예과", "한의사", "한의예과", "약사", "약학과", "의과학자"],
+    targetMajorKeywords: ["의사를 희망", "의사가 꿈", "의사의 길", "의사로서", "의예과", "의대", "치과의사", "치의예과", "한의사", "한의예과", "약사", "약학과", "의과학자", "전문의", "의약계열", "의학공학", "바이오의약", "생명공학"],
     desc: "생명체의 정밀 기전 규명과 첨단 바이오 신약 및 의학적 난제 해결에 접근하는 최상위 학업 수월성과 지적 탐구력이 돋보입니다."
   },
   {
@@ -2111,9 +2119,26 @@ const MAJOR_RECOMMEND_DOMAINS = [
     generalSubjects: ["독서", "화법과 작문", "수학Ⅰ", "생활과 윤리"],
     killerKeywords: ["교수학습법", "교육과정재구성", "수업시연", "학습동기부여", "교육불평등", "자기주도학습지도", "교육공학", "예비교사멘토링", "형성평가설계"],
     specKeywords: ["학습자이해", "교육철학", "교육격차", "수업설계", "진로지도", "교수법", "피드백제공", "개별화수업"],
-    generalKeywords: ["교사", "선생님", "교육", "학생", "수업", "학교", "가르침", "멘토", "학습", "지도", "이해", "배움"],
-    targetMajorKeywords: ["교사", "선생님", "사범대", "교육학과", "국어교육", "수학교육", "영어교육", "초등교사", "특수교육", "교대", "교육연구원"],
+    generalKeywords: ["교수학습", "수업시연", "교육과정", "수업지도", "학습동기", "교육불평등", "멘토링", "배움", "가르침", "교수법"],
+    targetMajorKeywords: ["교사를 희망", "교사가 꿈", "교사의 길", "사범대", "교육학과", "국어교육", "수학교육", "영어교육", "초등교사", "특수교육", "교대", "교육연구원", "예비교사", "교직"],
     desc: "학습자에 대한 깊은 공감과 교육적 소명감, 교과 지식을 효과적으로 구조화하여 전달하는 우수한 교수학습 설계 역량을 갖추었습니다."
+  },
+  {
+    name: "체육·스포츠과학·경찰·경호·소방",
+    category: "자율/융합",
+    targetHint: "체육|스포츠|경찰|경호|소방|무도",
+    badge: "스포츠과학 / 경찰경호 / 운동재활",
+    gatekeeper: {
+      requiredAny: ["스포츠 생활", "체육", "운동과 건강", "생명과학Ⅰ", "통합사회", "사회·문화"],
+      failReason: "체육 및 기초 사회 교과 미이수"
+    },
+    coreSubjects: ["스포츠 생활", "체육", "운동과 건강"],
+    generalSubjects: ["생명과학Ⅰ", "사회·문화", "생활과 윤리", "물리학Ⅰ"],
+    killerKeywords: ["스포츠과학", "운동생리학", "운동역학", "부상예방", "체력요소", "심박수측정", "운동처방", "스포츠재활", "경기분석", "경찰경호", "공공안전"],
+    specKeywords: ["스포츠", "웨어러블", "유도", "축구", "농구", "탁구", "경기운영", "운동수행", "선수지도", "체육지도", "경찰", "경호", "순발력", "지구력"],
+    generalKeywords: ["체육", "운동", "신체", "훈련", "건강", "체력", "경기", "안전", "규칙", "팀워크"],
+    targetMajorKeywords: ["체육계열", "체육학과", "스포츠과학", "경찰경호학과", "경찰학과", "경호학과", "소방학과", "스포츠지도사", "스포츠의학", "운동재활학과", "경찰관", "체육교사", "경호원", "소방관"],
+    desc: "신체 운동 역학과 스포츠과학 분석, 공공 안전 및 경찰·경호 분야에 대한 뛰어난 실천력과 리더십을 갖추었습니다."
   }
 ];
 
@@ -2187,7 +2212,11 @@ function getWeightedTextChunks(sections, studentTxt) {
   const chunks = [];
   
   // 1. 진로활동 (Section weight: 3.0)
-  if (sections && sections.career && sections.career.trim()) {
+  if (sections && sections.careerByGrade && Object.keys(sections.careerByGrade).length > 0) {
+    if (sections.careerByGrade["3"]) chunks.push({ text: sections.careerByGrade["3"], secWeight: 3.0, gradeWeight: 2.5, name: "진로활동(3학년)" });
+    if (sections.careerByGrade["2"]) chunks.push({ text: sections.careerByGrade["2"], secWeight: 3.0, gradeWeight: 1.8, name: "진로활동(2학년)" });
+    if (sections.careerByGrade["1"]) chunks.push({ text: sections.careerByGrade["1"], secWeight: 3.0, gradeWeight: 1.0, name: "진로활동(1학년)" });
+  } else if (sections && sections.career && sections.career.trim()) {
     const grades = splitByGrades(sections.career);
     if (grades.g3) chunks.push({ text: grades.g3, secWeight: 3.0, gradeWeight: 2.5, name: "진로활동(3학년)" });
     if (grades.g2) chunks.push({ text: grades.g2, secWeight: 3.0, gradeWeight: 1.8, name: "진로활동(2학년)" });
@@ -2196,7 +2225,11 @@ function getWeightedTextChunks(sections, studentTxt) {
   }
 
   // 2. 동아리활동 (Section weight: 2.5 - 학생 능동 선택)
-  if (sections && sections.club && sections.club.trim()) {
+  if (sections && sections.clubByGrade && Object.keys(sections.clubByGrade).length > 0) {
+    if (sections.clubByGrade["3"]) chunks.push({ text: sections.clubByGrade["3"], secWeight: 2.5, gradeWeight: 2.5, name: "동아리(3학년)" });
+    if (sections.clubByGrade["2"]) chunks.push({ text: sections.clubByGrade["2"], secWeight: 2.5, gradeWeight: 1.8, name: "동아리(2학년)" });
+    if (sections.clubByGrade["1"]) chunks.push({ text: sections.clubByGrade["1"], secWeight: 2.5, gradeWeight: 1.0, name: "동아리(1학년)" });
+  } else if (sections && sections.club && sections.club.trim()) {
     const grades = splitByGrades(sections.club);
     if (grades.g3) chunks.push({ text: grades.g3, secWeight: 2.5, gradeWeight: 2.5, name: "동아리(3학년)" });
     if (grades.g2) chunks.push({ text: grades.g2, secWeight: 2.5, gradeWeight: 1.8, name: "동아리(2학년)" });
@@ -2214,7 +2247,11 @@ function getWeightedTextChunks(sections, studentTxt) {
   }
 
   // 4. 자율활동 (Section weight: 0.8)
-  if (sections && sections.autonomy && sections.autonomy.trim()) {
+  if (sections && sections.autonomyByGrade && Object.keys(sections.autonomyByGrade).length > 0) {
+    if (sections.autonomyByGrade["3"]) chunks.push({ text: sections.autonomyByGrade["3"], secWeight: 0.8, gradeWeight: 2.5, name: "자율활동(3학년)" });
+    if (sections.autonomyByGrade["2"]) chunks.push({ text: sections.autonomyByGrade["2"], secWeight: 0.8, gradeWeight: 1.8, name: "자율활동(2학년)" });
+    if (sections.autonomyByGrade["1"]) chunks.push({ text: sections.autonomyByGrade["1"], secWeight: 0.8, gradeWeight: 1.0, name: "자율활동(1학년)" });
+  } else if (sections && sections.autonomy && sections.autonomy.trim()) {
     const grades = splitByGrades(sections.autonomy);
     if (grades.g3) chunks.push({ text: grades.g3, secWeight: 0.8, gradeWeight: 2.5, name: "자율활동(3학년)" });
     if (grades.g2) chunks.push({ text: grades.g2, secWeight: 0.8, gradeWeight: 1.8, name: "자율활동(2학년)" });
@@ -2241,6 +2278,18 @@ function getWeightedTextChunks(sections, studentTxt) {
 function recommendTopMajors(studentTxt, sections, aPct, cPct, mPct, lvlData) {
   const normTxt = normalizeSubject(studentTxt);
   const avgLevel = lvlData ? parseFloat(lvlData.avgLevel) : 2.0;
+
+  // 1. 전 학년 희망분야 목록 수집
+  const allHopes = (sections && sections.allHopes && sections.allHopes.length > 0) 
+    ? [...sections.allHopes] 
+    : [];
+  if (allHopes.length === 0) {
+    const hopeMatches = [...studentTxt.matchAll(/희망분야\s*[:\s]*([^\n]{1,40})/g)];
+    hopeMatches.forEach(m => {
+      const raw = m[1].replace(/다양한|자신의|학업|진로|체험|탐색.*$/, '').trim();
+      if (raw && !allHopes.includes(raw)) allHopes.push(raw);
+    });
+  }
 
   // 0단계: 대계열(STEM vs 인문사회) 성향 판별 (고교 2~3학년 선택과목 및 활동 어휘 밀도)
   const stemElectiveSubjs = ["물리학Ⅰ", "물리학Ⅱ", "화학Ⅰ", "화학Ⅱ", "생명과학Ⅰ", "생명과학Ⅱ", "지구과학Ⅰ", "지구과학Ⅱ", "미적분", "인공지능 수학", "프로그래밍"];
@@ -2271,9 +2320,10 @@ function recommendTopMajors(studentTxt, sections, aPct, cPct, mPct, lvlData) {
   const chunks = getWeightedTextChunks(sections, studentTxt);
   const careerTxt = (sections && sections.career) ? sections.career : "";
 
-  // 1단계: 13개 도메인별 4차원 지표 채점
+  // 1단계: 14개 도메인별 4차원 지표 채점
   let totalWeightedKwAll = 0;
   const rawDomains = [];
+  const genericHopeWords = new Set(["공학", "자연과학", "인문", "사회", "이공", "기타"]);
 
   MAJOR_RECOMMEND_DOMAINS.forEach(dom => {
     // [Pillar 1: 과목 이수 게이트키핑]
@@ -2355,7 +2405,6 @@ function recommendTopMajors(studentTxt, sections, aPct, cPct, mPct, lvlData) {
     totalWeightedKwAll += domainWeightedKwScore;
 
     // 키워드 점수 환산 (최대 35점)
-    // 킬러 및 특화 어휘가 전혀 없고 일반 어휘만 있는 경우 10점 상한 패널티 (쏠림 차단)
     let kwScore = 0;
     if (killerPoints === 0 && specPoints === 0) {
       kwScore = Math.min(10, Math.round(Math.log2(genPoints + 1) * 2));
@@ -2390,17 +2439,23 @@ function recommendTopMajors(studentTxt, sections, aPct, cPct, mPct, lvlData) {
       if (studentTxt.includes("학습") || studentTxt.includes("교수") || studentTxt.includes("설명")) evidenceScore += 3;
       if (studentTxt.includes("배려") || studentTxt.includes("소통") || studentTxt.includes("성장")) evidenceScore += 2;
     } else {
+      if (studentTxt.includes("운동") || studentTxt.includes("체육") || studentTxt.includes("스포츠") || studentTxt.includes("체력")) evidenceScore += 3;
       if (studentTxt.includes("비평") || studentTxt.includes("서평") || studentTxt.includes("감상평") || studentTxt.includes("문학적")) evidenceScore += 3;
-      if (studentTxt.includes("역사") || studentTxt.includes("사료") || studentTxt.includes("철학") || studentTxt.includes("성찰") || studentTxt.includes("고전")) evidenceScore += 3;
       if (studentTxt.includes("작품") || studentTxt.includes("시대정신") || studentTxt.includes("가치관") || studentTxt.includes("담론")) evidenceScore += 2;
     }
     const inquiryScore = lvlScore + Math.min(8, evidenceScore);
 
-    // D. 특정 학과/직업 단어 직접 노출 빈도 측정 (진로활동 및 전체 세특)
+    // D. 특정 학과/직업 단어 직접 노출 빈도 측정 (의사소통/의사결정 등 동음이의어 분리)
     let explicitCount = 0;
     const matchedExplicitWords = [];
     (dom.targetMajorKeywords || []).forEach(tw => {
-      const reg = new RegExp(tw, 'g');
+      let reg;
+      if (tw === "의사") {
+        reg = /의사(?!소통|결정)/g;
+      } else {
+        const esc = tw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        reg = new RegExp(esc, 'g');
+      }
       const m = studentTxt.match(reg);
       if (m && m.length > 0) {
         explicitCount += m.length;
@@ -2408,11 +2463,37 @@ function recommendTopMajors(studentTxt, sections, aPct, cPct, mPct, lvlData) {
       }
     });
 
-    const careerHope = (sections && sections.careerHope) ? sections.careerHope : "";
-    const inCareerHope = Boolean(careerHope && ((dom.targetMajorKeywords || []).some(tw => careerHope.includes(tw) || tw.includes(careerHope)) || (dom.targetHint && new RegExp(dom.targetHint).test(careerHope))));
+    // 전 학년 희망분야와 대조 (세부 희망학과 vs 일반 범용 계열 분리)
+    let specificHopeMatch = false;
+    let genericHopeMatch = false;
+
+    allHopes.forEach(h => {
+      const matchTwDirect = (dom.targetMajorKeywords || []).some(tw => h.includes(tw));
+      const matchTwReverse = (dom.targetMajorKeywords || []).some(tw => tw.includes(h) && !genericHopeWords.has(h));
+      const matchHint = dom.targetHint && new RegExp(dom.targetHint).test(h);
+      
+      if (matchTwDirect || matchTwReverse || matchHint) {
+        if (genericHopeWords.has(h)) {
+          genericHopeMatch = true;
+        } else {
+          specificHopeMatch = true;
+        }
+      }
+    });
+
+    const inCareerHope = specificHopeMatch;
     const inCareerSection = (dom.targetMajorKeywords || []).some(tw => careerTxt.includes(tw));
-    const isExplicitTarget = inCareerHope || inCareerSection || (explicitCount >= 2);
-    const explicitBonus = isExplicitTarget ? Math.min(45, (inCareerHope ? 32 : 20) + explicitCount * 4) : 0;
+    const isExplicitTarget = specificHopeMatch || inCareerSection || (explicitCount >= 2);
+    
+    // Explicit Bonus: 세부 희망학과 일치 시 35~45점 전폭 지원, 일반 계열은 10점, 진로/세특 빈도는 20~30점
+    let explicitBonus = 0;
+    if (specificHopeMatch) {
+      explicitBonus = Math.min(45, 35 + Math.min(10, explicitCount * 3));
+    } else if (inCareerSection || explicitCount >= 2) {
+      explicitBonus = Math.min(30, 20 + Math.min(10, explicitCount * 2));
+    } else if (genericHopeMatch) {
+      explicitBonus = 10;
+    }
 
     // 교차 계열 추가 게이트키핑 (이과 학생의 인문계열 1위 방지 / 문과 학생의 공학·의약학 1위 방지)
     if (!isExplicitTarget) {
@@ -2450,6 +2531,7 @@ function recommendTopMajors(studentTxt, sections, aPct, cPct, mPct, lvlData) {
       matchedExplicitWords,
       inCareerSection,
       isExplicitTarget,
+      specificHopeMatch,
       explicitBonus
     });
   });
@@ -2484,8 +2566,8 @@ function recommendTopMajors(studentTxt, sections, aPct, cPct, mPct, lvlData) {
       total = Math.min(25, total);
     }
 
-    // 보수적 상한선: 직접 지망 학생은 92점까지, 일반 추론 학생은 88점 상한 (게이트락은 30점)
-    const maxCap = d.gateLocked ? 30 : (d.isExplicitTarget ? 92 : 88);
+    // 보수적 상한선: 세부 희망학과 학생 95점, 직접 지망 90점, 일반 추론 85점 (게이트락은 30점)
+    const maxCap = d.gateLocked ? 30 : (d.specificHopeMatch ? 95 : (d.isExplicitTarget ? 90 : 85));
     const conservativeScore = Math.min(maxCap, Math.max(5, total));
 
     // 매칭된 키워드 (킬러 어휘 우선, 그 후 전문 어휘)
@@ -2502,6 +2584,7 @@ function recommendTopMajors(studentTxt, sections, aPct, cPct, mPct, lvlData) {
       specShareScore: specShareScore,
       explicitBonus: d.explicitBonus,
       isExplicitTarget: d.isExplicitTarget,
+      specificHopeMatch: d.specificHopeMatch,
       explicitCount: d.explicitCount,
       matchedExplicitWords: d.matchedExplicitWords,
       matchedKiller: d.matchedKiller,
@@ -2515,19 +2598,18 @@ function recommendTopMajors(studentTxt, sections, aPct, cPct, mPct, lvlData) {
 
   // [⭐ 핵심 정렬 로직]
   // 1. 게이트락(필수과목 미이수) 도메인은 최하위로 밀림 (1순위 차단)
-  // 2. 게이트락 통과 + 직접 지망 감지 전공 최우선 Fast-Track (🥇 1순위)
-  // 3. 그 후 종합 점수 및 전공 점유율 순 정렬
+  // 2. 생기부 공식 희망분야(1~3학년) 일치 전공 최우선 Fast-Track (🥇 1순위)
+  // 3. 진로활동/세특 직접 지망 전공 (🥈 직접 지망)
+  // 4. 그 후 종합 점수 및 전공 점유율 순 정렬
   results.sort((a, b) => {
     if (a.gateLocked !== b.gateLocked) {
       return a.gateLocked ? 1 : -1;
     }
+    if (a.specificHopeMatch !== b.specificHopeMatch) {
+      return a.specificHopeMatch ? -1 : 1;
+    }
     if (a.isExplicitTarget !== b.isExplicitTarget) {
       return a.isExplicitTarget ? -1 : 1;
-    }
-    if (a.isExplicitTarget && b.isExplicitTarget) {
-      if (b.explicitCount !== a.explicitCount) {
-        return b.explicitCount - a.explicitCount;
-      }
     }
     return b.totalScore - a.totalScore || b.specShareScore - a.specShareScore;
   });
@@ -2542,6 +2624,7 @@ function recommendTopMajors(studentTxt, sections, aPct, cPct, mPct, lvlData) {
     trackDesc: trackDesc,
     highestScore: highestScore,
     hasAnyExplicitTarget: hasAnyExplicitTarget,
+    allHopes: allHopes,
     top3: results.slice(0, 3),
     allResults: results
   };
@@ -2630,10 +2713,10 @@ function renderMajorRecommendations(recData) {
     else if (r.totalScore >= 65) gradeAdvice = "🔵 적정 지원 가능 (보완 시 경쟁력 강화)";
     else gradeAdvice = "🟠 소신/융합 지원 권장 (전공 키워드 보완 필요)";
 
-    const explicitBadgeHtml = r.isExplicitTarget && r.matchedExplicitWords.length > 0
+    const explicitBadgeHtml = (r.specificHopeMatch || (r.isExplicitTarget && r.matchedExplicitWords.length > 0))
       ? `<div style="margin: 3px 0 6px;">
            <span style="font-size:0.74rem; background:#dcfce7; color:#15803d; padding:2px 8px; border-radius:6px; border:1px solid #86efac; font-weight:800;">
-             🎯 생기부 직접 지망 감지: [${r.matchedExplicitWords.map(w => w.word).slice(0, 2).join(', ')}] (언급 ${r.explicitCount}회)
+             ${r.specificHopeMatch ? '🎯 생기부 공식 희망분야 일치' : '🎯 생기부 직접 지망 감지'}: [${r.matchedExplicitWords.length > 0 ? r.matchedExplicitWords.map(w => w.word).slice(0, 2).join(', ') : r.domain.name}] ${r.explicitCount > 0 ? `(언급 ${r.explicitCount}회)` : ''}
            </span>
          </div>`
       : '';
